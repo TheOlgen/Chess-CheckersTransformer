@@ -1,5 +1,3 @@
-from time import sleep
-
 import chess
 #import python-chess as chess
 import Evaluator
@@ -9,11 +7,16 @@ import RandomAgent
 board = chess.Board()
 agent = RandomAgent.RandomAgent()
 evaluator = Evaluator.Evaluator()
+file = open("randomData.txt", 'a')
 
 # Gra
-while not board.is_game_over():
+while True:
+    if board.is_game_over():
+        board = chess.Board()
     print(board)
-    print("Ocena pozycji:", evaluator.evaluate(board.fen()))
+    best_move, posEval = evaluator.evaluate(board.fen())
+    print("Ocena pozycji:", best_move, posEval)
+    file.write(board.fen() + " " + best_move + " " + str(posEval) + "\n")
 
     #print(list(board.legal_moves))
     move = agent.select_move(list(board.legal_moves))
@@ -22,7 +25,6 @@ while not board.is_game_over():
 
     print(f"Agent wykonuje ruch: {move}")
     board.push(move)
-    sleep(1)
 
 print(board)
 print("Gra zakończona:", board.result())
