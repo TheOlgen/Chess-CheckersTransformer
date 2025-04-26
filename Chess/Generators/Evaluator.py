@@ -3,7 +3,7 @@ from stockfish import Stockfish
 class Evaluator:
     def __init__(self):
         self.sf = Stockfish(
-            path="Stockfish/stockfish.exe",
+            path="../Stockfish/stockfish.exe",
             parameters={"Threads": 8, "Hash": 1024}
         )
 

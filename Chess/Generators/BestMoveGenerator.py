@@ -1,17 +1,15 @@
 import chess
 #import python-chess as chess
 import Evaluator as eval
-import RandomAgent
 
 # Inicjalizacja
 board = chess.Board()
-agent = RandomAgent.RandomAgent()
 evaluator = eval.Evaluator()
-file = open("randomData.txt", 'a')
+file = open("bestMoveData.txt", 'a')
 
 # Gra
 while True:
-    if board.is_game_over() or board.is_seventyfive_moves():
+    if board.is_game_over():
         board = chess.Board()
     print(board)
     best_move, posEval = evaluator.evaluate(board.fen())
@@ -19,12 +17,13 @@ while True:
     file.write(board.fen() + " " + best_move + " " + str(posEval) + "\n")
 
     #print(list(board.legal_moves))
-    move = agent.select_move(list(board.legal_moves))
-    if move is None:
+    if best_move is None:
         break  # brak ruchów (koniec gry)
 
-    print(f"Agent wykonuje ruch: {move}")
-    board.push(move)
+    best_move = chess.Move.from_uci(best_move)
+
+    print(f"Agent wykonuje ruch: {best_move}")
+    board.push(best_move)
 
 print(board)
 print("Gra zakończona:", board.result())
