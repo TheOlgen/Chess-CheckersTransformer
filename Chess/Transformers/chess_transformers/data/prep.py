@@ -4,9 +4,9 @@ import argparse
 import tables as tb
 from tqdm import tqdm
 
-from chess_transformers.configs import import_config
-from chess_transformers.data.utils import encode, parse_fen
-from chess_transformers.data.levels import TURN, PIECES, SQUARES, UCI_MOVES, BOOL
+from ..configs import import_config
+from .utils import encode, parse_fen
+from .levels import TURN, PIECES, SQUARES, UCI_MOVES, BOOL
 
 
 def prepare_data(

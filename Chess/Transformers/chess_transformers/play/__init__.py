@@ -1,7 +1,7 @@
 __all__ = ["moves", "play", "clocks", "exceptions", "utils"]
 
-from chess_transformers.play.utils import load_model, load_engine
-from chess_transformers.play.play import (
+from .utils import load_model, load_engine
+from .play import (
     human_v_model,
     model_v_engine,
     model_v_model,

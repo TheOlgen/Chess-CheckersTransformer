@@ -3,7 +3,7 @@ import torch
 import argparse
 from collections import OrderedDict
 
-from chess_transformers.configs import import_config
+from ..configs import import_config
 
 
 def average_checkpoints(

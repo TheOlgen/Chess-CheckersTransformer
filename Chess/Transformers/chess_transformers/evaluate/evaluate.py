@@ -2,9 +2,9 @@ import os
 import cpuinfo
 import argparse
 
-from chess_transformers.configs import import_config
-from chess_transformers.play.utils import write_pgns
-from chess_transformers.play import model_v_engine, warm_up, load_model, load_engine
+from ..configs import import_config
+from ..play.utils import write_pgns
+from ..play import model_v_engine, warm_up, load_model, load_engine
 
 
 def evaluate_model(CONFIG):

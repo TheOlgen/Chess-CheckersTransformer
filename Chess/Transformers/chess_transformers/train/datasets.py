@@ -5,7 +5,7 @@ import argparse
 import tables as tb
 from torch.utils.data import Dataset
 
-from chess_transformers.configs import import_config
+from ..configs import import_config
 
 
 class ChessDataset(Dataset):

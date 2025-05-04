@@ -9,8 +9,8 @@ from torch.amp import GradScaler
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from chess_transformers.train.utils import *
-from chess_transformers.configs import import_config
+from .utils import *
+from ..configs import import_config
 
 DEVICE = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"

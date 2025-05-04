@@ -17,8 +17,8 @@ from IPython.display import display
 from contextlib import contextmanager
 from colorama import Fore, Back, Style
 
-from chess_transformers.data.utils import encode, parse_fen
-from chess_transformers.data.levels import TURN, PIECES, UCI_MOVES, BOOL
+from ..data.utils import encode, parse_fen
+from ..data.levels import TURN, PIECES, UCI_MOVES, BOOL
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

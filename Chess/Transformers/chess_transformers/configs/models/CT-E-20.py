@@ -1,14 +1,14 @@
 import torch
-import pathlib
+#import pathlib
 
-from chess_transformers.train.utils import get_lr
-from chess_transformers.configs.data.LE22ct import *
-from chess_transformers.configs.other.stockfish import *
-from chess_transformers.train.datasets import ChessDataset
-from chess_transformers.configs.other.fairy_stockfish import *
-from chess_transformers.transformers.criteria import LabelSmoothedCE
-from chess_transformers.data.levels import TURN, PIECES, UCI_MOVES, BOOL
-from chess_transformers.transformers.models import ChessTransformerEncoder
+from ...train.utils import get_lr
+from ...configs.data.LE22ct import *
+from ...configs.other.stockfish import *
+from ...train.datasets import ChessDataset
+from ...configs.other.fairy_stockfish import *
+from ...transformers.criteria import LabelSmoothedCE
+from ...data.levels import TURN, PIECES, UCI_MOVES, BOOL
+from ...transformers.models import ChessTransformerEncoder
 
 
 ###############################

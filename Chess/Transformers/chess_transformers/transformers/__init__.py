@@ -1,6 +1,6 @@
 __all__ = ["criteria", "models", "modules"]
 
-from chess_transformers.transformers.models import (
+from .models import (
     ChessTransformer,
     ChessTransformerEncoder,
     ChessTransformerEncoderFT

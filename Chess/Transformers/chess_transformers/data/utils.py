@@ -2,7 +2,7 @@ import os
 import regex
 from collections import Counter
 
-from chess_transformers.data.levels import RANKS, FILES
+from .levels import RANKS, FILES
 
 
 def replace_number(match):

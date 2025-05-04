@@ -3,8 +3,8 @@ import torch
 import argparse
 from torch import nn
 
-from chess_transformers.configs import import_config
-from chess_transformers.transformers.modules import BoardEncoder, MoveDecoder
+from ..configs import import_config
+from .modules import BoardEncoder, MoveDecoder
 
 DEVICE = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"
