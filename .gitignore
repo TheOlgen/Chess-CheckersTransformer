@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+
+# CSV
+*.csv
+
 # Distribution / packaging
 .Python
 build/
@@ -169,3 +173,5 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+chessData.csv
+chess/Generators/chessData.csv
