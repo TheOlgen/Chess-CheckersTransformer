@@ -12,6 +12,12 @@ class DatabaseManager:
         self.DB_PASSWORD = os.getenv("DB_PASSWORD")
         self.DB_PORT = os.getenv("DB_PORT")
 
+
+    #    (key) string FEN
+    #    bool evaluated
+    #    int (0-4095) best_move
+    #    stockfish: a4a5
+
     def get_connection(self):
         return psycopg2.connect(database=self.DB_NAME, user=self.DB_USER, password=self.DB_PASSWORD, host=self.DB_HOST, port=self.DB_PORT)
 
