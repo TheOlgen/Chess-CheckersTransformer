@@ -7,6 +7,8 @@ class PositionEncoding(nn.Module):
     def __init__(self, d_model=512, max_len=64):
         super().__init__()
 
+
+
         pe = torch.zeros(max_len, d_model) #tworzymy macierz o wymiarach max_len na d_model
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1) #tworzymy sekwencje floatow od 0 do max_len
         #unsqueeze(1) - zamienia sekwencje na macierz kolumnowa
@@ -57,10 +59,12 @@ class Attention(nn.Module):
 
 
 class ChessTransformer(l.LightningModule):
-    def __init__(self, d_model=512, max_len=64, num_moves=4096):
+    def __init__(self, d_model=512, max_len=64, num_moves=4096, lr: float = 3e-4):
         super().__init__()
         self.d_model = d_model
         self.max_len = max_len
+        self.save_hyperparameters()
+
 
         self.embedding = nn.Embedding(num_embeddings=max_len, embedding_dim=d_model)
         self.position_encoding = PositionEncoding()
@@ -91,12 +95,32 @@ class ChessTransformer(l.LightningModule):
         start, end = self.index_to_notation(best_move_idx)
         return start + end
 
+    def validation_step(self, batch, batch_idx):
+        boards, moves = batch
+        logits = self(boards)
+        loss = self.loss_fn(logits, moves)
+        preds = torch.argmax(logits, dim=-1)
+        acc = (preds == moves).float().mean()
+        self.log('val/loss', loss, prog_bar=True)
+        self.log('val/acc', acc, prog_bar=True)
+
     def training_step(self, batch, batch_idx):
         boards, moves = batch
         logits = self.forward(boards)
         loss = self.loss(logits, moves)
         self.log('train/loss', loss, prog_bar=True)
         return loss
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.AdamW(
+            self.parameters(),
+            lr=self.hparams.lr,
+            weight_decay=1e-4,
+        )
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=10
+        )
+        return [optimizer], [scheduler]
 
     def index_to_notation(self, index):
         # Zamiana indeksu na współrzędne (0-36)
