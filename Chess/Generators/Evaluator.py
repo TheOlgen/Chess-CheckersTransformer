@@ -9,4 +9,4 @@ class Evaluator:
 
     def evaluate(self, fen_position):
         self.sf.set_fen_position(fen_position)
-        return self.sf.get_best_move(), self.sf.get_evaluation()
+        return self.sf.get_best_move()
