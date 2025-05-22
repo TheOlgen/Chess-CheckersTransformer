@@ -78,7 +78,7 @@ class ChessTransformer(l.LightningModule):
         logits = logits_seq.mean(dim=1)
         return logits  #logits
 
-    
+
 
     def predict_move(self, board_tensor):
         with torch.no_grad():
