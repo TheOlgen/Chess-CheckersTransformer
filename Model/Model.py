@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import lightning as l
+
+
 class PositionEncoding(nn.Module):
     def __init__(self, d_model=512, max_len=64):
         super().__init__()
@@ -83,17 +85,23 @@ class ChessTransformer(l.LightningModule):
     def predict_move(self, board_tensor):
         with torch.no_grad():
             logits = self.forward(board_tensor)  # Przewidywanie logitów dla możliwych ruchów
-            best_move_index = torch.argmax(logits, dim=-1).cpu().numpy()[0] #nie wiem czy nie zamienić na torch.argmax(logtis, dim=-1).item()
+            #best_move_index = torch.argmax(logits, dim=-1).cpu().numpy()[0] #nie wiem czy nie zamienić na torch.argmax(logtis, dim=-1).item()
+            best_move_idx = torch.argmax(logits, dim=-1).item()
 
-        #TODO: Zamiana indeksu ruchu na ewentualną notację (nie wiem czy tu):
-        #start, end = self.index_to_notation(best_move_index)
-        #return start + end
-        return best_move_index
+        start, end = self.index_to_notation(best_move_idx)
+        return start + end
+
+    def training_step(self, batch, batch_idx):
+        boards, moves = batch
+        logits = self.forward(boards)
+        loss = self.loss(logits, moves)
+        self.log('train/loss', loss, prog_bar=True)
+        return loss
 
     def index_to_notation(self, index):
         # Zamiana indeksu na współrzędne (0-36)
-        start_index = index // 36  # Pole początkowe
-        end_index = index % 36  # Pole docelowe
+        start_index = index // 64  # Pole początkowe
+        end_index = index % 64  # Pole docelowe
 
         # Zamiana współrzędnych na notację "jakąś" (np. 0 -> 'a1', 63 -> 'h8')
         start = self.index_to_coordinate(start_index)
@@ -103,6 +111,7 @@ class ChessTransformer(l.LightningModule):
 
 
     def index_to_coordinate(self, index):
-        row = 6 - (index // 6)  # Liczba wiersza (od 1 do 8)
-        col = chr(index % 6 + ord('a'))  # Kolumna (od 'a' do 'h')
+        row = 8 - (index // 8)  # Liczba wiersza (od 1 do 8)
+        col = chr(index % 8 + ord('a'))  # Kolumna (od 'a' do 'h')
         return col + str(row)
+
