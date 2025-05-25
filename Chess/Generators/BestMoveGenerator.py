@@ -3,29 +3,27 @@ import csv
 import chess
 #import python-chess as chess
 import Evaluator as eval
-#import pandas as pd
+from chess.Database.SQL_chess import init_db, add_position, show_database
 
 # Inicjalizacja
-#board = chess.Board()
 evaluator = eval.Evaluator()
 file = open("bestMoveData.txt", 'a')
-#TODO: PLIK Z planszami
-#inputs = open("boards.txt", 'r')
+init_db()
 
 with open('chessData.csv', newline='', encoding='utf-8') as csvfile:
     reader = csv.reader(csvfile)
     next(reader, None)
     count = 0
     for row in reader:
-        count += 1
-        if count >= 20:
-            break
         fen = row[0]
         best_move = evaluator.evaluate(fen)
-        file.write(fen + " ; " + best_move + "\n")
+        #file.write(fen + " ; " + best_move + "\n") #debug
+        add_position(fen, best_move)
+        break
 
 
 file.close()
+show_database()
 
 # with open("boards.txt", 'r') as boards:
 #     while True:

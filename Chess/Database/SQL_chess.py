@@ -7,7 +7,8 @@ import csv
 CSV_PATH = 'C:/sem4/SI/project/ProjectSI/Chess/Database/dataa.csv'  
 
 # Ścieżka do bazy danych (wraz z nazwą pliku .db)
-DB_PATH = 'C:/sem4/SI/project/ProjectSI/Chess/Database/chess_positions.db'  
+#DB_PATH = 'C:/sem4/SI/project/ProjectSI/Chess/Database/chess_positions.db'
+DB_PATH = 'C:/Users/olgar/OneDrive/Myzyka/Dokumenty/GitHub/ProjectSI/chess/Database/chess_positions.db'
 
 
 def init_db():
@@ -66,6 +67,32 @@ def import_fen_from_csv():
         print(f"Błąd: Nie znaleziono pliku CSV w ścieżce: {CSV_PATH}")
     except Exception as e:
         print(f"Krytyczny błąd: {e}")
+    finally:
+        conn.close()
+
+
+def add_position(fen: str, best_move: str):
+    """
+    Dodaje pojedynczy rekord do bazy danych.
+
+    :param fen: Reprezentacja pozycji FEN (musi być unikalna)
+    :param best_move: Najlepszy ruch w tej pozycji (np. 'e2e4')
+    """
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    try:
+        c.execute(
+            "INSERT INTO positions (fen, best_move) VALUES (?, ?)",
+            (fen, best_move)
+        )
+        conn.commit()
+        #do debuggu
+        #print(f"Sukces: Dodano pozycję do bazy.\nFEN: {fen}\nNajlepszy ruch: {best_move}")
+    except sqlite3.IntegrityError:
+        print("Pozycja z tym FEN już istnieje w bazie – pominięto.")
+    except Exception as e:
+        print(f"Błąd: {e}")
     finally:
         conn.close()
 
