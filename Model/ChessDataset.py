@@ -19,6 +19,7 @@ class ChessDataset(Dataset):
         board_tensor = self.fen_to_board(fen)
         return board_tensor, move_idx
 
+
     def fen_to_board(self, fen):
         piece_map = {
             'K': 6, 'Q': 5, 'R': 4, 'B': 3, 'N': 2, 'P': 1,  # Białe figury
