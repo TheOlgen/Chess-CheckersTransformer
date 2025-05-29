@@ -40,9 +40,9 @@ def parse_pdn_file(input_file, output_file):
     # Zapis do pliku wynikowego: każda partia w osobnej linii
     with open(output_file, 'w', encoding='utf-8') as f_out:
         for line in moves_only_list:
-            f_out.write(line + '\n' + '\n')
+            f_out.write(line + '\n')
 
-if __name__ == '__main__':
+def my_main():
     input_pdn = 'lidraughts_games_001.pdn'        # tutaj podaj nazwę pliku wejściowego
     output_moves = 'moves_001.txt'      # plik wyjściowy z samymi ruchami
 

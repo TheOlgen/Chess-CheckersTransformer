@@ -1,3 +1,4 @@
+import os
 import copy
 import re
 import csv
@@ -101,16 +102,28 @@ def position_to_square(row, col):
     return (row * 5) + (col // 2) + 1
 
 # === Zapis do pliku CSV ===
-if __name__ == "__main__":
+def my_main():
     input_filename = "converted_moves.txt"
     output_filename = "evaluation_001.csv"
 
+    # Sprawdź czy plik wejściowy istnieje
+    if not os.path.exists(input_filename):
+        print(f"Błąd: Brak pliku {input_filename}")
+        return
+
+    # Wczytaj linie z pliku
     with open(input_filename, "r", encoding="utf-8") as f:
         lines = [line.strip() for line in f if line.strip()]
 
-    with open(output_filename, mode="w", encoding="utf-8", newline='') as csvfile:
+    # Określ tryb otwarcia pliku (zapis lub dopisywanie)
+    file_mode = 'a' if os.path.exists(output_filename) else 'w'
+
+    with open(output_filename, mode=file_mode, encoding="utf-8", newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(["FEN", "najlepszy_ruch"])
+
+        # Dodaj nagłówki tylko jeśli tworzymy nowy plik
+        if file_mode == 'w':
+            writer.writerow(["FEN", "najlepszy_ruch"])
 
         for line in lines:
             try:
@@ -120,8 +133,9 @@ if __name__ == "__main__":
                     from_sq = position_to_square(*move[0])
                     to_sq = position_to_square(*move[1])
                     best_move_str = f"{from_sq}-{to_sq}"
-                    writer.writerow([line, best_move_str])               
+                    writer.writerow([line, best_move_str])
             except Exception as e:
-                # Nie zapisujemy linii jeśli jest błąd
-                # Możesz też tu dodać print lub logging, jeśli chcesz wiedzieć o błędach
+                # Możesz dodać logowanie błędów jeśli potrzebne
                 continue
+
+    print(f"Zapisano wyniki do {output_filename} (tryb: {'dopisano' if file_mode == 'a' else 'utworzono nowy'})")

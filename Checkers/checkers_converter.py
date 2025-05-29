@@ -73,8 +73,8 @@ def parse_game(moves_str):
         positions.append(fen)
     return positions
 
-def main():
-    input_file = "ruchy.txt"
+def my_main():
+    input_file = "moves_001.txt"
     output_file = "converted_moves.txt"
 
     with open(input_file, "r") as f:
@@ -96,4 +96,4 @@ def main():
                 out.write("")
 
 if __name__ == "__main__":
-    main()
+    my_main()
