@@ -68,7 +68,7 @@ class TransformerBlock(nn.Module):
         return x
 
 
-class ChessTransformer(pl.LightningModule):
+class GameTransformer(pl.LightningModule):
     def __init__(
         self,
         d_model: int = 512,
