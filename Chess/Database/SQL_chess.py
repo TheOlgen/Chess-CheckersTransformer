@@ -1,3 +1,4 @@
+import os.path
 import sqlite3
 import csv
 
@@ -8,8 +9,10 @@ CSV_PATH = 'C:/sem4/SI/project/ProjectSI/Chess/Database/dataa.csv'
 
 # Ścieżka do bazy danych (wraz z nazwą pliku .db)
 #DB_PATH = 'C:/sem4/SI/project/ProjectSI/Chess/Database/chess_positions.db'
-DB_PATH = 'C:/Users/olgar/OneDrive/Myzyka/Dokumenty/GitHub/ProjectSI/chess/Database/chess_positions.db'
 
+#DB_PATH = 'C:/Users/olgar/OneDrive/Myzyka/Dokumenty/GitHub/ProjectSI/chess/Database/chess_positions.db'
+BASE_DIR = os.path.dirname(__file__)
+DB_PATH = os.path.join(BASE_DIR, 'chess_positions.db')
 
 def init_db():
     """Inicjalizacja bazy danych z unikalnymi pozycjami FEN"""
@@ -133,6 +136,31 @@ def show_database(limit=20):
     finally:
         conn.close()
 
+def get_positions(limit = 100):
+
+    #wybiera 'limit' pozycji z bazy, które nie zostały wcześniej użyte do nauki/oceny modelu
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    query = "SELECT fen, best_move FROM positions WHERE terminated = 0 LIMIT ?"
+
+    try:
+        c.execute(query, (limit,))
+        rows = c.fetchall()
+        #print(f"\nWybrane rekordy: {rows}")
+
+    except Exception as e:
+        print(f"Błąd: {e}")
+        return []
+
+    else:
+        return rows
+
+    finally:
+        conn.close()
+
+
 
 if __name__ == "__main__":
     print("=== Szachowy menedżer baz danych ===")
@@ -140,5 +168,7 @@ if __name__ == "__main__":
     print(f"Ścieżka do bazy danych: {DB_PATH}\n")
 
     init_db()
-    import_fen_from_csv()
-    show_database()
+    #import_fen_from_csv()
+    #show_database()
+    rows = get_positions(20)
+    print(rows)

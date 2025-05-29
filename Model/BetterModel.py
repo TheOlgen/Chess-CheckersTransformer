@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
+from torchmetrics import Accuracy
 
 
 class PositionalEncoding(nn.Module):
@@ -98,6 +99,9 @@ class ChessTransformer(pl.LightningModule):
         # Final classification head
         self.fc = nn.Linear(d_model, num_moves)
         self.loss_fn = nn.CrossEntropyLoss()
+        self.train_accuracy = Accuracy(task="multiclass", num_classes=self.hparams.num_moves)
+        self.val_accuracy = Accuracy(task="multiclass", num_classes=self.hparams.num_moves)
+
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x shape: (batch_size, seq_len)
@@ -126,8 +130,26 @@ class ChessTransformer(pl.LightningModule):
         boards, moves = batch
         logits = self(boards)
         loss = self.loss_fn(logits, moves)
+        preds = torch.argmax(logits, dim=-1)
+        acc = self.train_accuracy(preds, moves)
+
         self.log('train/loss', loss, prog_bar=True)
+        self.log('train/acc', acc, prog_bar=True)
         return loss
+
+    def validation_step(self, batch, batch_idx):
+        boards, moves = batch
+        logits = self(boards)
+        loss = self.loss_fn(logits, moves)
+        preds = torch.argmax(logits, dim=-1)
+        acc = self.val_accuracy(preds, moves)
+
+        wrong = (preds != moves).sum()
+
+
+        self.log('val/loss', loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log('val/acc', acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log('val/errors', wrong, on_step=False, on_epoch=True, prog_bar=True)
 
     def predict_move(self, board_tensor: torch.Tensor) -> str:
         self.eval()
