@@ -67,7 +67,7 @@ class TransformerBlock(nn.Module):
         return x
 
 
-class ChessTransformer(pl.LightningModule):
+class GameTransformer(pl.LightningModule):
     def __init__(
         self,
         d_model: int = 512,
@@ -145,7 +145,6 @@ class ChessTransformer(pl.LightningModule):
         acc = self.val_accuracy(preds, moves)
 
         wrong = (preds != moves).sum()
-
 
         self.log('val/loss', loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log('val/acc', acc, on_step=False, on_epoch=True, prog_bar=True)

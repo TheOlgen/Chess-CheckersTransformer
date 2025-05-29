@@ -1,13 +1,18 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
-from BetterModel import ChessTransformer
+
 from ChessDataset import ChessDataset, ChessStreamDataset
 from pytorch_lightning.callbacks import ModelCheckpoint
 from Chess.Database.SQL_chess import get_positions
 import torch
-
-import os
 import re
+import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from Model.BetterModel import GameTransformer
+
+
 
 def get_best_checkpoint_nested(root_dir="checkpoints/"):
     pattern = re.compile(r"loss=([0-9.]+)\.ckpt")
@@ -44,10 +49,10 @@ def main():
 
     if checkpoint_path:
         print(f"Wczytywanie modelu z checkpointu: {checkpoint_path}")
-        model = ChessTransformer.load_from_checkpoint(checkpoint_path)
+        model = GameTransformer.load_from_checkpoint(checkpoint_path)
     else:
         print("Brak checkpointów – tworzenie nowego modelu.")
-        model = ChessTransformer(
+        model = GameTransformer(
             d_model=512,
             max_len=64,
             num_moves=4096,
@@ -105,10 +110,3 @@ def main():
 if __name__ == '__main__':
     torch.multiprocessing.freeze_support()
     main()
-
-
-
-
-
-
-
