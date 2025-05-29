@@ -4,6 +4,7 @@ import pytorch_lightning as pl
 from torchmetrics import Accuracy
 
 
+
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model: int = 512, max_len: int = 64):
         super().__init__()
@@ -71,13 +72,14 @@ class ChessTransformer(pl.LightningModule):
     def __init__(
         self,
         d_model: int = 512,
-        max_len: int = 64,
+        max_len: int = 72,
         num_moves: int = 4096,
         num_heads: int = 8,
         num_layers: int = 6,
         dim_feedforward: int = 2048,
         dropout: float = 0.1,
-        lr: float = 3e-4
+        lr: float = 3e-4,
+        evaluator = None
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -85,6 +87,7 @@ class ChessTransformer(pl.LightningModule):
         # Token embedding and positional encoding
         self.embedding = nn.Embedding(num_embeddings=max_len, embedding_dim=d_model)
         self.pos_encoding = PositionalEncoding(d_model=d_model, max_len=max_len)
+        self.evaluator = evaluator
 
         # Transformer layers
         self.layers = nn.ModuleList([
@@ -146,10 +149,13 @@ class ChessTransformer(pl.LightningModule):
 
         wrong = (preds != moves).sum()
 
-
         self.log('val/loss', loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log('val/acc', acc, on_step=False, on_epoch=True, prog_bar=True)
         self.log('val/errors', wrong, on_step=False, on_epoch=True, prog_bar=True)
+        if self.evaluator is not None:
+            illegal_count = self.evaluator(boards, preds)
+            self.log('val/illegal', illegal_count, prog_bar=True)
+
 
     def predict_move(self, board_tensor: torch.Tensor) -> str:
         self.eval()
