@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
-from BetterModel import ChessTransformer
-from ChessDataset import ChessDataset, ChessStreamDataset
+from BetterModel import GameTransformer
+from ChessDataset import ChessDataset, ChessStreamDataset, chessEvaluator
 from pytorch_lightning.callbacks import ModelCheckpoint
 from Chess.Database.SQL_chess import get_positions
 import torch
@@ -44,10 +44,10 @@ def main():
 
     if checkpoint_path:
         print(f"Wczytywanie modelu z checkpointu: {checkpoint_path}")
-        model = ChessTransformer.load_from_checkpoint(checkpoint_path)
+        model = GameTransformer.load_from_checkpoint(checkpoint_path)
     else:
         print("Brak checkpointów – tworzenie nowego modelu.")
-        model = ChessTransformer(
+        model = GameTransformer(
             d_model=512,
             max_len=64,
             num_moves=4096,
@@ -55,7 +55,8 @@ def main():
             num_layers=6,
             dim_feedforward=2048,
             dropout=0.1,
-            lr=3e-4
+            lr=3e-4,
+            evaluator=chessEvaluator
         )
 
 
