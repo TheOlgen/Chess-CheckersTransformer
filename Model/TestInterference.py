@@ -36,7 +36,7 @@ def main():
     model.eval()
 
     # --- opcjonalnie: wczytaj checkpoint ---
-    # checkpoint_path = "checkpoints/chess-transformer-epoch=05-val/loss=1.2345.ckpt"
+    # checkpoint_path = "checkpoints/Chess-transformer-epoch=05-val/loss=1.2345.ckpt"
     # model = ChessTransformer.load_from_checkpoint(checkpoint_path)
 
     with torch.no_grad():

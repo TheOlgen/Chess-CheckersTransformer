@@ -35,7 +35,7 @@ def main():
     checkpoint_cb = ModelCheckpoint(
         monitor='val/loss',            # metryka do monitorowania
         dirpath='checkpoints/',        # folder, gdzie będą zapisywane pliki
-        filename='chess-transformer-{epoch:02d}-{val/loss:.4f}',
+        filename='Chess-transformer-{epoch:02d}-{val/loss:.4f}',
         save_top_k=3,                  # trzy najlepsze wg val/loss
         mode='min'
     )

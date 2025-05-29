@@ -10,7 +10,7 @@ CSV_PATH = 'C:/sem4/SI/project/ProjectSI/Chess/Database/dataa.csv'
 # Ścieżka do bazy danych (wraz z nazwą pliku .db)
 #DB_PATH = 'C:/sem4/SI/project/ProjectSI/Chess/Database/chess_positions.db'
 
-#DB_PATH = 'C:/Users/olgar/OneDrive/Myzyka/Dokumenty/GitHub/ProjectSI/chess/Database/chess_positions.db'
+#DB_PATH = 'C:/Users/olgar/OneDrive/Myzyka/Dokumenty/GitHub/ProjectSI/Chess/Database/chess_positions.db'
 BASE_DIR = os.path.dirname(__file__)
 DB_PATH = os.path.join(BASE_DIR, 'chess_positions.db')
 

@@ -1,6 +1,6 @@
 import csv
 import Evaluator as eval
-from chess.Database.SQL_chess import init_db, add_position, show_database
+from Chess.Database.SQL_chess import init_db, add_position, show_database
 
 # Inicjalizacja
 evaluator = eval.Evaluator()

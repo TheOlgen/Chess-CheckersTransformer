@@ -175,4 +175,4 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 chessData.csv
-chess/Generators/chessData.csv
+Chess/Generators/chessData.csv
