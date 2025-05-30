@@ -171,3 +171,5 @@ cython_debug/
 .pypirc
 /Checkers/scan_31
 !/Checkers/scan_31/CheckersEngineInit.py
+
+/.idea
