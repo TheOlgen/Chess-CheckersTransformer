@@ -110,6 +110,7 @@ def show_database(limit=20):
         conn.close()
 
 
+
 if __name__ == "__main__":
     print("=== Warcabowy menedżer baz danych ===")
     print(f"Ścieżka do CSV: {CSV_PATH}")
@@ -118,3 +119,4 @@ if __name__ == "__main__":
     init_db()
     import_pdn_from_csv()
     show_database()
+
