@@ -176,3 +176,7 @@ cython_debug/
 .pypirc
 chessData.csv
 Chess/Generators/chessData.csv
+
+/Checkers/scan_31
+!Checkers/scan_31/CheckersEngineInit.py
+/Checkers/bb

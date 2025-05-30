@@ -1,0 +1,24 @@
+ Jak odpalić slinik
+ 1. pobierz ze strony https://hjetten.home.xs4all.nl/scan/scan.html scan_31.zip i bb.zip
+ 2.dodaj do katalogu checkers scan_31 i wrzuć tam CheckersEngineInit
+ 3.zmień w CheckersEngineInit ścieżki do scan_31.exe
+ 4. wejdź w HubEngine. Przekieruje cie do hub.py. Zmień metodę quit na :
+
+     def quit(self) -> None:
+            """Quit the engine."""
+            self.send("quit")
+            try:
+                # communicate w odróżnieniu od wait czeka I ZAMYKA
+                # Użyj communicate() zamiast wait(), aby zapewnić zamknięcie strumieni I/O
+                # communicate() zwróci dane ze stdout/stderr, które możemy zignorować, jeśli nie są potrzebne.
+                stdout_data, stderr_data = self.p.communicate(timeout=1) # zamyka wyjście i wyjście błędów
+                # Możesz zalogować stdout_data/stderr_data, jeśli chcesz zobaczyć ostatnie wyjścia silnika
+                # logger.debug(f"Engine stdout on quit: {stdout_data}")
+                # logger.debug(f"Engine stderr on quit: {stderr_data}")
+                logger.debug(f"{self.ENGINE} Engine process {self.p.pid} gracefully quit.")
+            except subprocess.TimeoutExpired:
+                logger.warning(
+                    f"{self.ENGINE} Engine process {self.p.pid} did not quit gracefully within timeout, killing it.")
+                self.kill_process()  # Jeśli nie zamknął się grzecznie, zabij go
+            except Exception as e:
+                logger.error(f"Error while trying to quit engine {self.p.pid}: {e}")
