@@ -174,9 +174,16 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+<<<<<<< .merge_file_13mDnm
 chessData.csv
 Chess/Generators/chessData.csv
 
 /Checkers/scan_31
 !Checkers/scan_31/CheckersEngineInit.py
 /Checkers/bb
+=======
+/Checkers/scan_31
+!/Checkers/scan_31/CheckersEngineInit.py
+
+/.idea
+>>>>>>> .merge_file_Xqg04c
