@@ -104,7 +104,7 @@ def position_to_square(row, col):
 # === Zapis do pliku CSV ===
 def my_main():
     input_filename = "converted_moves.txt"
-    output_filename = "evaluation_001.csv"
+    output_filename = "Database/evaluation_001.csv"
 
     # Sprawdź czy plik wejściowy istnieje
     if not os.path.exists(input_filename):

@@ -293,7 +293,7 @@ def generate_csv():
     with open("converted_moves.txt", "r", encoding="utf-8") as f:
         lines = [line.strip() for line in f if line.strip()]
 
-    with open("evaluation_001.csv", mode="w", encoding="utf-8", newline='') as csvfile:
+    with open("Database/evaluation_001.csv", mode="w", encoding="utf-8", newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["FEN", "najlepszy_ruch"])
 
