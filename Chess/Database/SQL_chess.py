@@ -143,15 +143,30 @@ def get_positions(limit = 100):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    query = "SELECT fen, best_move FROM positions WHERE terminated = 0 LIMIT ?"
+    #query = "SELECT fen, best_move FROM positions WHERE terminated = 0 LIMIT ?"
+
+
+    query = """WITH sel AS (
+      SELECT id, fen, best_move
+      FROM positions
+      WHERE terminated = 0
+      LIMIT ?
+    ),
+    upd AS (
+      UPDATE positions
+      SET terminated = 1
+      WHERE id IN (SELECT id FROM sel)
+      RETURNING fen, best_move
+    )
+    SELECT fen, best_move FROM upd;
+    """
 
     try:
         c.execute(query, (limit,))
         rows = c.fetchall()
-        #print(f"\nWybrane rekordy: {rows}")
 
     except Exception as e:
-        print(f"Błąd: {e}")
+        print(f"Błąd pobierania rekordów z bazy: {e}")
         return []
 
     else:
