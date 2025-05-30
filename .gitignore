@@ -6,6 +6,11 @@ __pycache__/
 # C extensions
 *.so
 
+*.ckpt
+
+# CSV
+*.csv
+
 # Distribution / packaging
 .Python
 build/
@@ -169,7 +174,12 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+<<<<<<< .merge_file_1gQG53
 /Checkers/scan_31
 !/Checkers/scan_31/CheckersEngineInit.py
 
 /.idea
+=======
+chessData.csv
+Chess/Generators/chessData.csv
+>>>>>>> .merge_file_RX7ZeA

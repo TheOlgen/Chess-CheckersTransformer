@@ -1,31 +1,27 @@
 import csv
-
-import chess
-#import python-chess as chess
 import Evaluator as eval
+from Chess.Database.SQL_chess import init_db, add_position, show_database
 
 # Inicjalizacja
-#board = chess.Board()
 evaluator = eval.Evaluator()
 file = open("bestMoveData.txt", 'a')
-#TODO: PLIK Z planszami
-inputs = open("boards.txt", 'r')
+init_db()
 
-with open("boards.txt", 'r') as boards:
-    while True:
-        fen = boards.readline()
-        if fen == "":
-            break
-        print(fen)
+with open('chessData.csv', newline='', encoding='utf-8') as csvfile:
+    reader = csv.reader(csvfile)
+    next(reader, None)
+    for row in reader:
+        fen = row[0]
         best_move = evaluator.evaluate(fen)
-        print("Best move:", best_move)
-        file.write(fen + " ; " + best_move + "\n")
+        #file.write(fen + " ; " + best_move + "\n") #debug
+        add_position(fen, best_move)
+        #to zakomentujcie jeśli chcecie coś dodawać do bazy
+        break
 
 
+file.close()
+show_database()
 
-    # Gra
 
-
-    #print(list(board.legal_moves))
 
 

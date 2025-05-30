@@ -1,13 +1,20 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
-from BetterModel import GameTransformer
-from ChessDataset import ChessDataset, ChessStreamDataset, chessEvaluator
+
+from ChessDataset import ChessDataset, ChessStreamDataset
 from pytorch_lightning.callbacks import ModelCheckpoint
 from Chess.Database.SQL_chess import get_positions
 import torch
-
-import os
 import re
+import os
+import sys
+
+from Model.ChessDataset import chessEvaluator
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from Model.BetterModel import GameTransformer
+
+
 
 def get_best_checkpoint_nested(root_dir="checkpoints/"):
     pattern = re.compile(r"loss=([0-9.]+)\.ckpt")
@@ -49,7 +56,7 @@ def main():
         print("Brak checkpointów – tworzenie nowego modelu.")
         model = GameTransformer(
             d_model=512,
-            max_len=64,
+            max_len=72,
             num_moves=4096,
             num_heads=8,
             num_layers=6,
@@ -94,10 +101,10 @@ def main():
         precision="32",              # FP16 mixed precision
         callbacks=[checkpoint_cb, early_stop_cb],
         log_every_n_steps=20,
-        limit_train_batches=50, #DO TESTÓW
+        limit_train_batches=10, #DO TESTÓW
         limit_val_batches=10, #DO TESTÓW
         #fast_dev_run=1
-        max_steps=10
+        max_steps=20
     )
 
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
@@ -106,10 +113,3 @@ def main():
 if __name__ == '__main__':
     torch.multiprocessing.freeze_support()
     main()
-
-
-
-
-
-
-
