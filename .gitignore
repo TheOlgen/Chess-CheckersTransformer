@@ -174,5 +174,13 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+/Checkers/scan_31
+!/Checkers/scan_31/CheckersEngineInit.py
+
+/.idea
+=======
 chessData.csv
 Chess/Generators/chessData.csv
+
+.idea/
