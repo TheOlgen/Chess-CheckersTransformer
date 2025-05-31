@@ -66,19 +66,6 @@ def main():
             evaluator=chessEvaluator
         )
 
-
-    # model = ChessTransformer.load_from_checkpoint(
-    #     checkpoint_path,
-    #     d_model=512,
-    #     max_len=64,
-    #     num_moves=4096,
-    #     num_heads=8,
-    #     num_layers=6,
-    #     dim_feedforward=2048,
-    #     dropout=0.1,
-    #     lr=3e-4
-    # )
-
     checkpoint_cb = ModelCheckpoint(
         monitor='val/loss',            # metryka do monitorowania
         dirpath='checkpoints/',        # folder, gdzie będą zapisywane pliki
@@ -98,13 +85,9 @@ def main():
         max_epochs=50,
         accelerator="auto",
         devices="auto",     #jak dużo gpu/cpu zostanie uzytych
-        precision="32",              # FP16 mixed precision
+        precision="16",              # FP16 mixed precision
         callbacks=[checkpoint_cb, early_stop_cb],
-        log_every_n_steps=20,
-        limit_train_batches=10, #DO TESTÓW
-        limit_val_batches=10, #DO TESTÓW
-        #fast_dev_run=1
-        max_steps=20
+        log_every_n_steps=20
     )
 
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
