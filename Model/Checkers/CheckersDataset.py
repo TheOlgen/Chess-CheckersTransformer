@@ -4,9 +4,9 @@ from torch.utils.data import Dataset, IterableDataset
 # import draughts # This might not be strictly needed if we parse FEN ourselves
 # If you plan to use draughts.Board for validation or move generation later, keep it.
 # For now, let's assume fen_to_board handles it.
-
+import re
 # Import from your database file
-from Checkers.Database.SQL_checkers import get_positions
+from Model.Checkers.SQL_checkers import get_positions
 
 
 # --- Helper functions for 10x10 Draughts Field Numbering ---
@@ -161,17 +161,18 @@ class CheckersDataset(Dataset):
 
 
 class CheckersStreamDataset(IterableDataset):
-    def __init__(self, chunk_size: int = 1000):
+    def __init__(self, chunk_size: int = 200):
         self.chunk_size = chunk_size
 
     def __iter__(self):
         # get_positions now yields (pdn_fen_string, best_move_string)
-        for custom_pdn_fen, best_move_str in get_positions(self.chunk_size):
+        for custom_pdn_fen, best_move_str, terminated in get_positions(self.chunk_size):
             try:
                 # Convert custom PDN FEN to standard FEN first
                 standard_fen = custom_pdn_fen_to_standard_fen(custom_pdn_fen)
                 board_tensor = fen_to_board_tensor(standard_fen)
                 move_idx = move_to_index(best_move_str)
+
                 yield board_tensor, torch.tensor(move_idx, dtype=torch.long)
             except Exception as e:
                 print(f"Błąd przetwarzania pozycji: {custom_pdn_fen}, ruch: {best_move_str} - {e}")
