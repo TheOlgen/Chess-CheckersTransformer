@@ -187,11 +187,28 @@ def parse_game(moves_str):
     # Dodaj początkową pozycję przed jakimikolwiek ruchami
     positions.append(to_pdn_fen(board, turn))
 
-    for move in moves:
+    # for move in moves:
+    #     apply_move(board, move)
+    #     turn = 'b' if turn == 'w' else 'w'
+    #     fen = to_pdn_fen(board, turn)
+    #     positions.append(fen)
+    # return positions
+    for i, move in enumerate(moves):
+        try:
+            from_field = int(re.match(r'\d+', move).group())
+            to_field = int(re.findall(r'\d+', move)[-1])
+            if not (1 <= from_field <= 50) or not (1 <= to_field <= 50):
+                # 0-2 I 2-0 TO WYNIK PARTII, WIĘC W TYM MIEJSCU KOŃCZYMY ANALIZĘ
+                return positions
+        except Exception as e:
+            print(f"⚠️ Błąd przy analizie ruchu {move}: {e}")
+            return positions
+
         apply_move(board, move)
         turn = 'b' if turn == 'w' else 'w'
         fen = to_pdn_fen(board, turn)
         positions.append(fen)
+
     return positions
 
 
