@@ -171,11 +171,11 @@ class GameTransformer(pl.LightningModule):
         preds = torch.argmax(logits, dim=-1)
         acc = self.val_accuracy(preds, moves)
 
-        wrong = (preds != moves).sum()
+        wrong = (preds != moves).sum().float()
 
         self.log('val/loss', loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log('val/acc', acc, on_step=False, on_epoch=True, prog_bar=True)
-        self.log('val/errors', wrong, on_step=False, on_epoch=True, prog_bar=True)
+        self.log('val/errors', wrong, on_step=False, on_epoch=True, prog_bar=True, reduce_fx=torch.sum)
 
         # Pass the global checkersEvaluator
         if self.evaluator is not None:

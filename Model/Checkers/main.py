@@ -9,6 +9,8 @@ import torch
 import os
 import re
 
+# Konfiguracja CUDA dla Tensor Cores
+torch.set_float32_matmul_precision("high")
 
 def get_best_checkpoint_nested(root_dir="checkpoints/"):
     pattern = re.compile(r"loss=([0-9.]+)\.ckpt")

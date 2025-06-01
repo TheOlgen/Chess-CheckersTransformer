@@ -127,48 +127,33 @@ def show_database(limit=20):
         conn.close()
 
 
-def get_positions(chunk_size: int = 200):
-    """
-    Pobiera pozycje z bazy danych w częściach (chunkach) i zwraca je jako generator.
-    Każdy element yield to krotka (pdn_fen_string, best_move_string).
-    Po pomyślnym pobraniu pozycji, jej status 'terminated' jest ustawiany na TRUE (1).
-    """
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-
+def get_positions(chunk_size=200):
     try:
-        # Select all positions to be processed and marked as terminated upon retrieval
-        c.execute("SELECT pdn, best_move FROM positions")
-
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        offset = 0
         while True:
-            rows = c.fetchmany(chunk_size)
+            # To jest zapytanie, które generuje błąd "no such table: positions"
+            c.execute(f"SELECT pdn, best_move FROM positions LIMIT {chunk_size} OFFSET {offset}")
+            rows = c.fetchall()
             if not rows:
-                break  # No more data
-
-            pdns_to_update = []
+                break
             for row in rows:
-                pdn_fen = row[0]
-                best_move = row[1]
-                yield (pdn_fen, best_move)  # Yield the position first
-
-                # Collect PDNs to update their 'terminated' status
-                pdns_to_update.append(pdn_fen)
-
-            # After yielding all rows in the current chunk, update their 'terminated' status
-            if pdns_to_update:
-                # Create a placeholder string for the IN clause: (?, ?, ...)
-                placeholders = ','.join('?' * len(pdns_to_update))
-                update_query = f"UPDATE positions SET terminated = 1 WHERE pdn IN ({placeholders})"
-                c.execute(update_query, pdns_to_update)
-                conn.commit()  # Commit changes for the current chunk
-                #print(f"Zaktualizowano status 'terminated' dla {len(pdns_to_update)} pozycji.")
-
+                yield row
+            offset += chunk_size
     except Exception as e:
-        print(f"Błąd podczas pobierania i aktualizowania pozycji z bazy danych w chunkach: {e}")
+        print(f"Błąd podczas pobierania pozycji z bazy danych w chunkach: {e}")
     finally:
         conn.close()
 
-        
+def restart_terminated():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    update_query = f"UPDATE positions SET terminated = 0"
+    c.execute(update_query)
+    conn.commit()
+
+
 if __name__ == "__main__":
     print("=== Warcabowy menedżer baz danych ===")
     print(f"Ścieżka do CSV: {CSV_PATH}")
@@ -182,20 +167,5 @@ if __name__ == "__main__":
     else:
         print(f"Pominięto import z CSV: plik '{CSV_PATH}' nie istnieje. Upewnij się, że wygenerowałeś go wcześniej.")
 
+    #restart_terminated()
     show_database()
-
-    # Przykład użycia nowej funkcji get_positions
-    # Convert the generator to a list to allow slicing for demonstration
-    all_draughts_positions_list = list(get_positions())
-
-    if all_draughts_positions_list:
-        print("\nPierwsze 3 pobrane pozycje (przykładowo):")
-        # Iterate over the first 3 elements of the list
-        for i, pos_tuple in enumerate(all_draughts_positions_list[:3]):
-            print(f"Pozycja {i + 1}:")
-            # Access elements by index as they are tuples (pdn, best_move)
-            print(f"  PDN (FEN): {pos_tuple[0]}")
-            print(f"  Najlepszy ruch: {pos_tuple[1]}")
-            print("-" * 20)
-    else:
-        print("\nBaza danych jest pusta lub wystąpił błąd podczas pobierania pozycji.")
