@@ -49,7 +49,7 @@ class CheckersDataset(IterableDataset):
             start = self.db_offset
 
             while True:
-                batch = get_positions(limit=self.chunk_size, offset=start)  # TODO
+                batch = get_positions(chunk_size=self.chunk_size, offset=start)  # TODO
                 if not batch:
                     break
                 for custom_pdn_fen, best_move_str in batch:

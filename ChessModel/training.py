@@ -58,12 +58,13 @@ def main():
             d_model=512,
             max_len=72,
             num_moves=4096,
+            num_embeddings=13,
             num_heads=8,
             num_layers=6,
             dim_feedforward=2048,
             dropout=0.1,
             lr=3e-4,
-            evaluator=chessEvaluator
+            evaluator=chessEvaluator,
         )
 
     checkpoint_cb = ModelCheckpoint(

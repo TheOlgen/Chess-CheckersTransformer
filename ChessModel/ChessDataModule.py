@@ -1,6 +1,6 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
-from CheckersTraining.CheckersDataset import CheckersDataset
+from ChessModel.ChessDataset import ChessDataset
 
 
 class CheckersDataModule(pl.LightningDataModule):
@@ -15,8 +15,8 @@ class CheckersDataModule(pl.LightningDataModule):
         self.val_ds = None
 
     def setup(self, stage=None):
-        self.train_ds = CheckersDataset(chunk_size=self.chunk_size, records_per_epoch=self.records_per_epoch)
-        self.val_ds = CheckersDataset(chunk_size=self.chunk_size, records_per_epoch=self.records_per_epoch)
+        self.train_ds = ChessDataset(chunk_size=self.chunk_size, records_per_epoch=self.records_per_epoch)
+        self.val_ds = ChessDataset(chunk_size=self.chunk_size, records_per_epoch=self.records_per_epoch)
 
     def train_dataloader(self):
         return DataLoader(self.train_ds, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=True, shuffle=False)
@@ -25,17 +25,6 @@ class CheckersDataModule(pl.LightningDataModule):
         return DataLoader(self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=True, shuffle=False)
 
     def on_train_epoch_start(self):
-
         ep = self.trainer.current_epoch
         self.train_ds.current_epoch = ep
-
-    def state_dict(self):
-        return {
-            "train_ds_state": self.train_ds.state_dict(),
-            "val_ds_state": self.val_ds.state_dict()
-        }
-
-    def load_state_dict(self, state_dict):
-        self.train_ds.load_state_dict(state_dict["train_ds_state"])
-        self.val_ds.load_state_dict(state_dict["val_ds_state"])
 
