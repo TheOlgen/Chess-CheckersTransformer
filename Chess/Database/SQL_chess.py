@@ -136,45 +136,48 @@ def show_database(limit=20):
     finally:
         conn.close()
 
-def get_positions(limit = 100):
 
-    #wybiera 'limit' pozycji z bazy, które nie zostały wcześniej użyte do nauki/oceny modelu
+def get_positions(limit=100):
+    import sqlite3
 
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    #query = "SELECT fen, best_move FROM positions WHERE terminated = 0 LIMIT ?"
-
-
-    query = """WITH sel AS (
-      SELECT id, fen, best_move
-      FROM positions
-      WHERE terminated = 0
-      LIMIT ?
-    ),
-    upd AS (
-      UPDATE positions
-      SET terminated = 1
-      WHERE id IN (SELECT id FROM sel)
-      RETURNING fen, best_move
-    )
-    SELECT fen, best_move FROM upd;
-    """
-
     try:
-        c.execute(query, (limit,))
+        # 1. Pobierz dane
+        c.execute("""
+            SELECT id, fen, best_move
+            FROM positions
+            WHERE terminated = 0
+            LIMIT ?
+        """, (limit,))
         rows = c.fetchall()
+
+        if not rows:
+            return []
+
+        # 2. Pobierz listę ID do aktualizacji
+        ids = [str(row[0]) for row in rows]
+
+        # 3. Ustaw terminated = 1 dla wybranych rekordów
+        id_list_str = ",".join(ids)
+        update_query = f"""
+            UPDATE positions
+            SET terminated = 1
+            WHERE id IN ({id_list_str})
+        """
+        c.execute(update_query)
+        conn.commit()
+
+        # 4. Zwróć tylko fen, best_move (bez id)
+        return [(row[1], row[2]) for row in rows]
 
     except Exception as e:
         print(f"Błąd pobierania rekordów z bazy: {e}")
         return []
 
-    else:
-        return rows
-
     finally:
         conn.close()
-
 
 
 if __name__ == "__main__":
