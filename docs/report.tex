@@ -1,0 +1,123 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\renewcommand{\contentsname}{Spis treści}
+
+
+\title{Szachy bez przeszukiwania: \\Uczenie maszynowe z użyciem transformera w kontekście szachów i warcab}
+\author{Patryk Lewandowski, Kacper Mikołajuk, \\Natalia Sekuła, Olga Rodziewicz, Natalia Dembkowska \\ Politechnika Gdańska \\01.06.2025}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Celem projektu było zbadanie możliwości zastosowania architektury transformera do nauczenia modelu gry w szachy oraz warcaby. W przeciwieństwie do tradycyjnych silników szachowych bazujących na algorytmicznym przeszukiwaniu kolejnych możliwości, w celu znalezienia najlepszego ruchu, trenujemy X - parametrowy transformer poprzez przekazanie X ocenionych plansz dla modelu szachowego oraz x plansz dla modelu warcabowego.
+\end{abstract}
+
+\begin{figure}[b]
+  \centering
+  \includegraphics[width=0.7\textwidth]{logotyp-PG-i-WETI.jpg}
+
+\end{figure}
+
+\clearpage
+\tableofcontents
+\clearpage
+
+\section{Wprowadzenie}
+Transformer to architektura sieci neuronowej zaproponowana w pracy „Attention Is All You Need” (Vaswani i in., 2017). W odróżnieniu od klasycznych rekurencyjnych sieci neuronowych (RNN) czy sieci konwolucyjnych (CNN), transformer opiera się w całości na mechanizmie \emph{self-attention}, co pozwala mu jednocześnie przetwarzać wszystkie pozycje w sekwencji wejściowej. Kluczowe elementy transformera to:
+\begin{itemize}
+    \item \textbf{Mechanizm self-attention:} Każdy token (np. ruch w partii szachów czy warcab) jest reprezentowany jako wektor, a następnie dla każdej pary tokenów obliczana jest waga (uwaga) wskazująca, jak mocno jeden token powinien wpływać na reprezentację drugiego. Dzięki temu model może wychwytywać zależności między dowolnymi elementami sekwencji, niezależnie od ich odległości pozycyjnej.
+    \item \textbf{Embedding pozycyjne:} Ponieważ transformer nie przetwarza sekwencji w sposób rekurencyjny, konieczne jest zakodowanie informacji o kolejności tokenów. Wykorzystuje się do tego wektory pozycjonowania (ang. \emph{positional encodings}), które dodawane są do reprezentacji każdego tokena. Dzięki temu model rozumie, które ruchy występują wcześniej, a które później.
+    \item \textbf{Warstwy feed‐forward i warstwy normalizacji:} Po obliczeniu uwag dla każdej pozycji następuje przejście przez warstwę liniową z nieliniową funkcją aktywacji (np. ReLU), a następnie warstwa normalizacji (Layer Normalization). Całość tworzy moduł, który można wielokrotnie powielać (tzw. bloki transformera).
+    \item \textbf{Maskowanie (w modelach autoregresywnych):} Aby model ucząc się generowania sekwencji nie „zobaczył” przyszłych tokenów, stosuje się tzw. \emph{causal mask} — maskę zabezpieczającą, która uniemożliwia uwzględnianie wagi (uwagi) od pozycji dalszych niż obecna.
+\end{itemize}
+
+W praktyce architektura transformera dzieli się na dwie główne części:
+\begin{enumerate}
+    \item \textbf{Encoder:} W wielu zadaniach, np. tłumaczeniach maszynowych, stosuje się strukturę encoder–decoder. Część enkodera przetwarza całą sekwencję wejściową (np. zdanie w języku źródłowym), tworząc wektory reprezentujące znaczenie każdego tokena z uwzględnieniem kontekstu całego zdania.
+    \item \textbf{Decoder:} W części dekodera model generuje sekwencję wyjściową (np. przetłumaczone zdanie), krok po kroku, korzystając z informacji z enkodera i dotychczas wygenerowanych tokenów. Każdy dekoderowy blok transformera stosuje najpierw mechanizm self-attention (z maską), a następnie attention nad wyjściem enkodera.
+\end{enumerate}
+
+W kontekście naszego projektu, w którym celem jest wytrenowanie transformera generatywnego do przewidywania kolejnych ruchów w partii (szachowej lub warcabowej), możemy skupić się na tzw. \emph{transformerze decoder-only} (podobnie jak modele z rodziny GPT). Taki model:
+\begin{itemize}
+    \item Przyjmuje na wejściu sekwencję dotychczasowych ruchów (zakodowanych jako wektory tokenów).
+    \item A dzięki mechanizmowi maskowanego self-attention uczy się generować kolejny token (ruch) bazując na całości dotychczasowej sekwencji.
+\end{itemize}
+
+
+
+\section{Implementacja}
+\subsection{Zbiór danych}
+Dane użyte w projekcie zostały przygotowane w następujący sposób:
+\begin{enumerate}
+    \item \textbf{Pozyskanie surowych danych:}
+    \\W przypadku szachów, dane został pobrane z serwisu LiChess w formacie PGN, które przekształcamy na notację FEN. W przypadku warcab, dane pochodzą z LiDraughts w formacie X.
+    \item \textbf{Ocena pozycji:}
+    \begin{itemize}
+        \item \emph{Szachy:} Dla każdej pozycji (zapisanej w formacie FEN) uruchamiony zostaje silnik Stockfish za pomocą biblioteki \texttt{python-stockfish}, który dla danej planszy zwraca najlepszy ruch. 
+        \item \emph{Warcaby:} Aby uzyskać najlepszy ruch, użyty został wrapper pydraugths, korzystający z zewnętrznego silnika Scan Engine dostosowanego do warcab na planszy 10×10. Skrypt w Pythonie przekazywał pozycję w postaci odpowiedniego formatu (analogicznego do FEN dla warcab), a silnik zwracał najlepszy ruch w notacji. 
+    \end{itemize}
+    \item \textbf{Baza danych:}
+    \\Do składowania plansz użyta została baza danych SQLite. Przekształcone dane na odpowiednią notacje wraz z najlepszym ruchem uzyskanym przez silnik szachowy/warcabowy zostają przechowane w bazie danych. Następnie jest ona źródłem danych dla uczonego modelu transformera. 
+\end{enumerate}
+
+\subsection{Model}
+Implementacja modelu oraz procesu treningu została zrealizowana w języku Python, z wykorzystaniem bibliotek \texttt{torch} (PyTorch) i \texttt{pytorch-lightning}. Kluczowe etapy to: tokenizacja, konstrukcja architektury transformera oraz algorytm treningowy.
+
+\paragraph{Tokenizacja danych}
+\\Aby model transformera mógł operować na danych, każdą pozycję oraz odpowiadający jej ruch należało zamienić na sekwencję liczb (tokenów). W pierwszym kroku dzieliliśmy tekstową notację FEN na fragmenty odpowiadające poszczególnym rzędom szachownicy (lub układowi warcabnicy), a następnie każdy znak (litery figur, cyfry określające puste pola, symbole rozdzielające) traktowaliśmy jako osobny token. Dodatkowo w FEN-ie zawarte są informacje o aktywnym kolorze, prawach do roszady, kwadracie \emph{en passant} oraz licznikach półruchów i ruchów; wszystkie te elementy kodowaliśmy jako odrębne tokeny liczbowo odpowiadające ich możliwym wartościom. W efekcie, dla każdej pozycji uzyskiwaliśmy sekwencję o długości w praktyce oscylującej wokół 70–80 tokenów, co wliczało zarówno układ bierek, jak i pozostałe parametry FEN-a.
+
+Ruch w notacji UCI (np. \texttt{e2e4}) lub analogiczny w warcabach (np. \texttt{b6c7e5}) również dzieliliśmy na podtokeny: litera kolumny i cyfra rzędu rozdzielane były na dwie części, a każdy z tych podtokenów miał swój indeks w słowniku. W ten sposób ruch łączono w sekwencję długości zwykle 2 lub 4 tokenów. 
+
+Sekwencja wejściowa do transformera powstawała z połączenia tokenów opisujących bieżący stan gry (FEN). W naszym podejściu ograniczyliśmy się do stanu bieżącego (pełnego opisu FEN-a), traktując zadanie jako predykcję kolejnego ruchu wyłącznie na podstawie tego, co jest widoczne na planszy. Wyjście modelu ma postać jednego tokenu (lub sekwencji tokenów) odpowiadającego najlepszym ruchom zwróconym przez silnik; w końcowym etapie dekodowaliśmy go z powrotem do postaci tekstowej (notacja UCI lub odpowiednik dla warcab).
+
+
+
+
+\paragraph{Architektura transformera}
+\\Trasformer, który wykorzystaliśmy w projekcie, to wariant „decoder‐only” inspirowany modelami GPT. Jego zadaniem było uczenie się mapowania sekwencji wejściowej (tokeny opisujące bieżący stan gry) na sekwencję wyjściową (token(y) ruchu). Całość została zaimplementowana jako klasa dziedziczącą po \\\texttt{pytorch\_lightning.LightningModule}, co umożliwiło wygodne zarządzanie pętlą treningową, logowaniem oraz checkpointami.
+
+Pierwszym etapem w module transformera jest warstwa embeddingu, która mapuje każdy token (liczony z zakresu od 0 do rozmiaru słownika minus jeden) na wektor o wymiarze \(d_{\text{model}} = 512\). Następnie do każdego embeddingu dodawane jest pozycjonalne kodowanie (ang. \emph{positional encoding}), dzięki któremu model wie, w której kolejności pojawiły się tokeny. Pozycjonalne kodowanie zostało zaimplementowane zgodnie z pomysłem z oryginalnej publikacji Vaswaniego i innych\;– obliczamy wektory sinusoida i cosinusoida dla kolejnych pozycji od 0 do maksymalnej długości sekwencji (w naszym przypadku ustalonej na 72 tokeny) i dodajemy je do embeddingu.
+
+Rdzeń modelu składa się z sześciu kolejnych bloków transformera. Każdy blok zawiera maskowaną warstwę self‐attention z ośmioma głowami oraz wielowarstwowy moduł feed‐forward (w dwóch krokach liniowej transformacji z funkcją aktywacji ReLU pomiędzy). Po warstwie uwagi oraz po module feed‐forward stosujemy normalizację warstwy (Layer Normalization) oraz dropout o prawdopodobieństwie odrzutu równym 0,1, aby zapobiegać nadmiernemu dopasowaniu. Maskowanie w warstwie self‐attention jest konieczne po to, aby model podczas nauki predykcji następnego tokenu nie miał dostępu do elementów sekwencji wykraczających poza bieżącą pozycję (ang. \emph{causal mask}). Dzięki temu sieć uczy się autoregresywnie generować ruch bazując tylko na tym, co jest już „widoczne”.
+
+Po przejściu przez wszystkie bloki transformera otrzymujemy tensor o kształcie\\ \((\text{batch\_size}, \text{seq\_len}, d_{\text{model}})\). Aby wykonać predykcję ruchu, najpierw uśredniamy ten tensor po wymiarze sekwencji (tzw. pooling mean). W rezultacie otrzymujemy wektor o wymiarze \((\text{batch\_size}, d_{\text{model}})\), który następnie podajemy na w pełni połączoną warstwę liniową zwracającą logity dla każdego możliwego ruchu w słowniku (łącznie kilkanaście tysięcy tokenów ruchu). Do obliczenia funkcji straty wykorzystujemy entropię krzyżową (\(\text{CrossEntropyLoss}\)), porównującą przewidywany rozkład prawdopodobieństwa z rzeczywistym ruchem zapisanym w danych.
+
+\subsection{Proces treningu}
+
+Trening modelu prowadziliśmy w środowisku PyTorch Lightning, co znacznie uprościło zarządzanie iteracjami treningowymi, walidacją oraz zapisem checkpointów. Dane wczytywane były z bazy SQLite, za każdym razem pobierany był kolejny chunk o wielkości 1000 plansz wraz z najlepszym ruchem uzyskanym poprzez zewnętrzny silnik szachowy bądź warcabowy.  Przy każdym wywołaniu generatora pobieraliśmy partię (ang. batch) składającą się z 64 par \((\text{tokeny\_planszy}, \text{token\_ruchu})\). Na etapie tworzenia batcha każdą notację FEN zamienialiśmy na tensor liczb (tokenizacja opisana wcześniej), zaś ruch kodowaliśmy poprzez odwzorowanie notacji UCI na indeks w słowniku.
+
+Jako optymalizator zastosowaliśmy AdamW z początkową wartością współczynnika uczenia \(\mathrm{lr} = 5 \times 10^{-5}\) oraz weight decay równym \(1 \times 10^{-2}\). Plan treningu zakładał 20 epok, co w przybliżeniu przekładało się na 50 000 kroków (batchy), ponieważ całkowita liczba ocenionych pozycji wynosiła około pół miliona. Po każdej epoce obliczaliśmy stratę i metryki na zbiorze walidacyjnym. Jeśli przez dwie kolejne epoki nie obserwowaliśmy poprawy walidacyjnej straty, obniżaliśmy learning rate o czynnik 0,5. Dodatkowo zapisywaliśmy checkpointy modelu co dwie epoki oraz zawsze, gdy metryka Top-1 Accuracy na zbiorze walidacyjnym uległa poprawie.
+
+Dzięki internemu logowaniu Lightninga mogliśmy w czasie rzeczywistym śledzić spadek straty i wzrost dokładności (Accuracy), a także liczbę nielegalnych ruchów zgłoszonych przez funkcję oceniającą. Każde przewidziane przesunięcie było weryfikowane względem aktualnych zasad gry – na przykład w szachach sprawdzaliśmy, czy ruch należy do zbioru legalnych w danej pozycji na podstawie obiektu \texttt{chess.Board} z biblioteki \texttt{python-chess}. W przypadku warcab rozpoznawaliśmy ruchy wieloskokowe i sprawdzaliśmy, czy nie dochodzi do naruszenia zasad bicie-ciąg.
+
+\subsection{Ewaluacja}
+
+Po zakończeniu treningu model zweryfikowaliśmy na wcześniej wydzielonym zbiorze testowym, stanowiącym około 10\% wszystkich ocenionych pozycji i nigdy nieużytym w trakcie uczenia. Proces ewaluacji przebiegał dwuetapowo. Najpierw wczytywaliśmy najlepszy checkpoint (według metryki Top-1 Accuracy na walidacji) i uruchamialiśmy metodę \texttt{trainer.validate()}, aby upewnić się, że model nie przeuczył się i dalej poprawnie generalizuje. Następnie wywoływaliśmy \texttt{trainer.test()}, przekazując testowy \texttt{DataLoader}. Dla każdej próbki obliczaliśmy prawdopodobieństwo wszystkich możliwych ruchów i porównywaliśmy wybrany przez model ruch z rzeczywistym ruchem silnika (Stockfish lub Scan Engine). Ponadto sprawdzaliśmy, czy sugerowany ruch jest legalny – w przypadku niezgodności liczyliśmy je jako \emph{illegal moves} i logowaliśmy tę wartość.
+
+Do oceny jakości modelu posłużyły następujące metryki:
+\begin{itemize}
+    \item \emph{Move Accuracy} – odsetek przypadków, w których przewidziany ruch dokładnie odpowiadał rekomendacji silnika (Top-1 Accuracy).
+    \item \emph{Top-5 Accuracy} – odsetek, w którym poprawny ruch znajdował się wśród pięciu najbardziej prawdopodobnych ruchów wybranych przez model.
+    \item \emph{Cross-entropy loss} – średnia wartość funkcji straty na zbiorze testowym.
+    \item \emph{Illegal Moves Count} – liczba nielegalnych ruchów (predicted\_move nie należący do zbioru legalnych), co sygnalizuje, na ile model nauczył się zasad gry, a nie tylko wzorców z danych.
+\end{itemize}
+
+Wyniki ewaluacji zapisywaliśmy w pliku X, dzięki któremu mogliśmy później wygenerować wykresy obrazujące spadek straty oraz wzrost dokładności w kolejnych epokach (przy użyciu biblioteki \texttt{matplotlib}), a także porównać osobno dokładność modelu dla szachów i dla warcab. Dodatkowo wybraliśmy kilka przykładowych pozycji z testu i przedstawiliśmy je w formie tabelarycznej z analizą przypadków, w których X.
+
+
+\section{Rezultaty}
+TODO
+\section{Wnioski}
+TODO
+\section{Bibliografia}
+TODO
+\end{document}
