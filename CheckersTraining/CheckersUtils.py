@@ -1,15 +1,22 @@
-from typing import List, Tuple
 import torch
-from torch.utils.data import Dataset, IterableDataset
-# import draughts # This might not be strictly needed if we parse FEN ourselves
-# If you plan to use draughts.Board for validation or move generation later, keep it.
-# For now, let's assume fen_to_board handles it.
+from typing import List, Tuple
 import re
-# Import from your database file
-from Model.Checkers.SQL_checkers import get_positions
 
+# piece_map_board: mapuje FEN do wartości liczbowych tensora
+piece_map_board = {
+    'w': 1,  # białe pionki
+    'b': 2,  # czarne pionki
+    'W': 3,  # białe damki
+    'B': 4,  # czarne damki
+    '.': 0  # puste pole
+}
 
-# --- Helper functions for 10x10 Draughts Field Numbering ---
+# reverse_piece_map_board: mapuje wartości liczbowe z powrtoem do FEN
+reverse_piece_map_board = {
+    1: 'w', 2: 'b', 3: 'W', 4: 'B',
+    0: '.'  # Use '.' for empty for FEN string
+}
+
 def field_to_coords(field: int) -> Tuple[int, int]:
     """Zamienia numer pola (1–50) na współrzędne (rząd, kolumna) na planszy 10x10 (0-9)."""
     if not (1 <= field <= 50):
@@ -20,35 +27,16 @@ def field_to_coords(field: int) -> Tuple[int, int]:
     # Kolumna jest (field - 1) % 5 * 2 + (row + 1) % 2
 
     row = 9 - (field - 1) // 5
-    # Calculate column based on row parity (even rows start with odd columns for dark squares, odd rows with even)
-    # This logic assumes the standard 10x10 board setup where dark squares are (r+c)%2 == 1
-    # Example: Field 1 is (9,1), Field 5 is (9,9)
-    # Field 6 is (8,0), Field 10 is (8,8)
-    if row % 2 == 0:  # Even rows (0, 2, ..., 8) in 0-indexed form means top rows in game
-        col = (field - 1) % 5 * 2 + 1  # Dark squares are at odd columns (1,3,5,7,9)
-    else:  # Odd rows (1, 3, ..., 9) in 0-indexed form means bottom rows in game
-        col = (field - 1) % 5 * 2  # Dark squares are at even columns (0,2,4,6,8)
 
-    # There's a common inconsistency in field_to_coords logic. Let's use the one that converts PDN FEN (1-50) to 0-9 indices
-    # This was the one from the previous code that worked with the original PDN FEN conversion:
-    # row = 9 - (field - 1) // 5
-    # col = ((field - 1) % 5) * 2 + ((row + 1) % 2)
-    # Let's verify this logic against standard 10x10 numbering
-    # Field 1 (bottom right): row 9, col 1
-    # field_to_coords(1): 9 - (0//5) = 9, (0%5)*2 + (9+1)%2 = 0 + 0 = 0. So (9,0) for field 1. This is not standard.
-    # Standard field 1 is 9th row, 1st square (from right). In 0-indexed (row 9, col 1)
+    if row % 2 == 0:  # Rzędy (0, 2, ..., 8) odnaczaja 'top rows'
+        col = (field - 1) % 5 * 2 + 1  # Dark squares - kolumny (1,3,5,7,9)
+    else:  # Rzędy (1, 3, ..., 9) oznaczaja 'bottom rows'
+        col = (field - 1) % 5 * 2  # Dark squares - kolumny (0,2,4,6,8)
 
-    # Let's adopt a consistent 10x10 standard field numbering and mapping
-    # Fields are 1-50, from top-left dark square to bottom-right dark square
-    # Top row (rank 1, 0-indexed row 0): fields 1-5 (e.g. (0,1), (0,3), (0,5), (0,7), (0,9))
-    # Bottom row (rank 10, 0-indexed row 9): fields 46-50 (e.g. (9,0), (9,2), (9,4), (9,6), (9,8))
-
-    # Corrected field_to_coords for International Draughts 1-50 numbering
-    # from top-left dark square (1) to bottom-right dark square (50)
     row_0_indexed = (field - 1) // 5
-    if row_0_indexed % 2 == 0:  # Even rows (0, 2, ...) start with light square at col 0, dark at col 1
+    if row_0_indexed % 2 == 0:
         col_0_indexed = ((field - 1) % 5) * 2 + 1
-    else:  # Odd rows (1, 3, ...) start with dark square at col 0
+    else:
         col_0_indexed = ((field - 1) % 5) * 2
 
     return row_0_indexed, col_0_indexed
@@ -140,66 +128,9 @@ def custom_pdn_fen_to_standard_fen(custom_pdn_fen: str) -> str:
     return f"{board_fen_part} {turn}"
 
 
-class CheckersDataset(Dataset):
-    def __init__(self, fens: List[str], best_moves: List[str]):
-        # fens here are assumed to be standard FENs, not custom PDN FENs
-        assert len(fens) == len(best_moves)
-        self.fens = fens
-        self.best_moves = best_moves
-
-    def __len__(self):
-        return len(self.fens)
-
-    def __getitem__(self, idx):
-        fen = self.fens[idx]
-        best_move_str = self.best_moves[idx]
-
-        board_tensor = fen_to_board_tensor(fen)  # Use the new fen_to_board_tensor
-        move_idx = move_to_index(best_move_str)
-
-        return board_tensor, torch.tensor(move_idx, dtype=torch.long)
-
-
-class CheckersStreamDataset(IterableDataset):
-    def __init__(self, chunk_size: int = 200):
-        self.chunk_size = chunk_size
-
-    def __iter__(self):
-        # get_positions now yields (pdn_fen_string, best_move_string)
-        for custom_pdn_fen, best_move_str in get_positions(self.chunk_size):
-            try:
-                # Convert custom PDN FEN to standard FEN first
-                standard_fen = custom_pdn_fen_to_standard_fen(custom_pdn_fen)
-                board_tensor = fen_to_board_tensor(standard_fen)
-                move_idx = move_to_index(best_move_str)
-
-                yield board_tensor, torch.tensor(move_idx, dtype=torch.long)
-            except Exception as e:
-                print(f"Błąd przetwarzania pozycji: {custom_pdn_fen}, ruch: {best_move_str} - {e}")
-                # Optionally log or skip this item
-
-
-# --- Board and Move Encoding/Decoding for 10x10 Draughts ---
-
-# piece_map_board: Maps FEN char to integer for the board tensor
-piece_map_board = {
-    'w': 1,  # białe pionki
-    'b': 2,  # czarne pionki
-    'W': 3,  # białe damki
-    'B': 4,  # czarne damki
-    '.': 0  # puste pole
-}
-
-# reverse_piece_map_board: Maps integer back to FEN char
-reverse_piece_map_board = {
-    1: 'w', 2: 'b', 3: 'W', 4: 'B',
-    0: '.'  # Use '.' for empty for FEN string
-}
-
-
 def fen_to_board_tensor(standard_fen: str) -> torch.Tensor:
     """
-    Konwertuje standardowy ciąg FEN dla warcabów 10x10 na tensor.
+    Konwertuje standardowy ciąg FEN dla warcabów 10x10 na tensor
     Tensor: 100 elementów dla pól + 1 element dla koloru ruchu (0=czarne, 1=białe).
     """
     parts = standard_fen.split()
@@ -266,35 +197,29 @@ def move_to_index(move_str: str) -> int:
     Indeks: from_field * 51 + to_field (używając 51 jako bazę, bo pola są 1-50, więc 50 wartości).
     Maksymalny indeks: 50 * 51 + 50 = 2550 + 50 = 2600.
     """
-    if '-' not in move_str:  # Handle 'Brak ruchów' or error cases
-        return 0  # Or some other designated "no move" index
+    if '-' not in move_str:
+        return 0
 
     try:
         from_field, to_field = map(int, move_str.split('-'))
-        # Validate fields are within 1-50 range
+
         if not (1 <= from_field <= 50 and 1 <= to_field <= 50):
             raise ValueError(f"Nieprawidłowe numery pól w ruchu: {move_str}")
 
-        # We need a total of 50 possible source squares and 50 possible dest squares.
-        # So we can map from_field (1-50) to (from_field - 1) (0-49)
-        # And to_field (1-50) to (to_field - 1) (0-49)
-        # Index = (from_field - 1) * 50 + (to_field - 1)
-        # Max index: 49 * 50 + 49 = 2450 + 49 = 2499
         return (from_field - 1) * 50 + (to_field - 1)
     except ValueError as e:
         print(f"Błąd konwersji ruchu '{move_str}' na indeks: {e}")
-        return 0  # Return a default/error index (e.g., for 'Brak ruchów')
-
+        return 0  #default/error index (Brak ruchów')
 
 def index_to_move(index: int) -> str:
     """
     Konwertuje indeks z powrotem na ruch w formacie 'from_field-to_field'.
     """
-    # index = (from_field - 1) * 50 + (to_field - 1)
+    # Assuming index = (from_field - 1) * 50 + (to_field - 1)
     # from_field = index // 50 + 1
     # to_field = index % 50 + 1
-    if not (0 <= index < 2500):  # index musi byc [0,2500)
-        return "N/A"
+    if not (0 <= index < 2500):  # Max index (50*50 - 1) = 2499
+        return "N/A"  # Or handle as an error
 
     from_field = (index // 50) + 1
     to_field = (index % 50) + 1
@@ -306,27 +231,30 @@ def checkersEvaluator(boards: torch.Tensor, preds: torch.Tensor):
     Ocenia legalność przewidywanych ruchów.
     Wymaga Board z draughts, aby sprawdzić legalność ruchów.
     """
-    import draughts
+    import draughts  # Import draughts here if not imported globally
     illegal_count = 0
 
     for i in range(boards.shape[0]):
         board_tensor = boards[i]
-        predicted_idx = preds[i].item()
+        predicted_idx = preds[i].item()  # Get the predicted move index
 
         try:
+            # 1. Konwertuj tensor planszy na standardowy FEN
             fen_string = board_tensor_to_fen(board_tensor)
 
-            #Należy utworzyć board na podstawie FEN:
+            # 2. Utwórz obiekt Board z tego FEN
             board = draughts.Board(fen_string)
 
+            # 3. Konwertuj przewidywany indeks na ruch (np. "34-29")
             predicted_move_str = index_to_move(predicted_idx)
 
-            if predicted_move_str == "N/A":
+            if predicted_move_str == "N/A":  # Handle invalid indices from model
                 illegal_count += 1
                 continue
 
-            #czy ruch jest legalny na danej planszy:
+            # 4. Sprawdź, czy ruch jest legalny na danej planszy
             # draughts.Board.parse_move() takes PDN move (e.g., '34-29')
+            # and checks if it's legal given the current board state.
 
             legal_moves = board.legal_moves()
             is_legal = False
@@ -345,3 +273,5 @@ def checkersEvaluator(boards: torch.Tensor, preds: torch.Tensor):
 
     # print(f"Illegal moves in batch: {illegal_count}/{len(boards)}")
     return illegal_count
+
+

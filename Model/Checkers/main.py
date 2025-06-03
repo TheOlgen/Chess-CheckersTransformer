@@ -37,7 +37,6 @@ def get_best_checkpoint_nested(root_dir="checkpoints/"):
 
 
 def main():
-    # Make sure you have enough data in your DB for these chunk sizes
     train_ds = CheckersStreamDataset(chunk_size=200)
     val_ds = CheckersStreamDataset(chunk_size=200)
 
@@ -61,14 +60,14 @@ def main():
         print("Brak checkpointów – tworzenie nowego modelu.")
         model = GameTransformer(
             d_model=512,
-            max_len=101,  # 100 board positions + 1 for active player
-            num_moves=2500,  # Max possible move indices (50 * 50)
+            max_len=101,  # 100 board positions + 1 o tym, który gracz wykonuje ruch
+            num_moves=2500,
             num_heads=8,
             num_layers=6,
             dim_feedforward=2048,
             dropout=0.1,
             lr=3e-4,
-            evaluator=checkersEvaluator  # Pass the evaluator function
+            evaluator=checkersEvaluator
         )
 
     checkpoint_cb = ModelCheckpoint(
@@ -95,13 +94,11 @@ def main():
         log_every_n_steps=20,
         limit_train_batches=50,  # DO TESTÓW
         limit_val_batches=10,  # DO TESTÓW
-        # fast_dev_run=1
-        # max_steps=10 # This will override max_epochs for testing, remove for full training
     )
 
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
 
-if __name__ == '__main__':  # Changed from '__main_checkers__' to '__main__'
+if __name__ == '__main__':
     torch.multiprocessing.freeze_support()
     main()
