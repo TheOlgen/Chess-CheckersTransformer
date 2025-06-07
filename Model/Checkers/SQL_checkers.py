@@ -128,23 +128,42 @@ def show_database(limit=20):
 
 
 def get_positions(chunk_size=200):
+    conn = None
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        offset = 0
+
+        # Pobierz całkowitą liczbę rekordów
+        c.execute("SELECT COUNT(*) FROM positions")
+        total = c.fetchone()[0]
+
+        # Użyj zmiennej statycznej do przechowywania offsetu między wywołaniami
+        if not hasattr(get_positions, 'offset'):
+            get_positions.offset = 0
+
         while True:
-            # To jest zapytanie, które generuje błąd "no such table: positions"
-            c.execute(f"SELECT pdn, best_move FROM positions LIMIT {chunk_size} OFFSET {offset}")
+            c.execute(f"SELECT pdn, best_move FROM positions LIMIT {chunk_size} OFFSET {get_positions.offset}")
             rows = c.fetchall()
+            print(f"AKTUALNY OFFSET {get_positions.offset}")
             if not rows:
-                break
+                # Jeśli nie ma więcej rekordów, resetujemy offset
+                get_positions.offset = 0
+                continue
+
             for row in rows:
                 yield row
-            offset += chunk_size
+
+            get_positions.offset += chunk_size
+
+            # Jeśli offset przekroczył całkowitą liczbę rekordów, resetujemy go
+            if get_positions.offset >= total:
+                get_positions.offset = 0
+
     except Exception as e:
         print(f"Błąd podczas pobierania pozycji z bazy danych w chunkach: {e}")
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 def restart_terminated():
     conn = sqlite3.connect(DB_PATH)

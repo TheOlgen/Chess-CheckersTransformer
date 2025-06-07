@@ -8,7 +8,7 @@ LIMIT = 100  # max 300
 
 # Pobierz nazwę użytkownika z pliku
 
-with open('DataTest.txt', 'r') as f:
+with open('username.txt', 'r') as f:
     USERNAME = f.read().strip()
 
 
