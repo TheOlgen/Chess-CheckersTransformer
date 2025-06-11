@@ -75,12 +75,16 @@ def custom_pdn_fen_to_standard_fen(custom_pdn_fen: str) -> str:
     Konwertuje custom PDN FEN ([FEN "B:W18,24,..."]) na standardowy FEN 10x10
     (np. "2b2b2b2b/b2b2b2b2/... b").
     """
-    # Usunięcie '[FEN "' i '"]'
-    content_match = re.match(r'\[FEN "(.*?)"\]', custom_pdn_fen)
-    if not content_match:
-        raise ValueError(f"Nieprawidłowy format custom PDN FEN: {custom_pdn_fen}")
+    # Obsłuż zarówno format z nagłówkiem FEN, jak i bez niego
+    if custom_pdn_fen.startswith("[FEN"):
+        content_match = re.match(r'\[FEN\s+"(.*?)"\]', custom_pdn_fen)
+        if not content_match:
+            raise ValueError(f"Nieprawidłowy format custom PDN FEN: {custom_pdn_fen}")
+        content = content_match.group(1)
+    else:
+        # Jeśli nie ma nagłówka [FEN "..."], uznaj to za samą zawartość
+        content = custom_pdn_fen.strip()
 
-    content = content_match.group(1)
     parts = content.split(':')
 
     if len(parts) < 1:
@@ -161,8 +165,11 @@ class CheckersDataset(Dataset):
 
 
 class CheckersStreamDataset(IterableDataset):
-    def __init__(self, chunk_size: int = 200):
+    def __init__(self, chunk_size: int = 200, start_offset: int = 0, loop: bool = False):
         self.chunk_size = chunk_size
+        self.start_offset = start_offset
+        self.loop = loop
+
 
     def __iter__(self):
         # get_positions now yields (pdn_fen_string, best_move_string)

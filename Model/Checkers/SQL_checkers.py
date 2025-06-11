@@ -5,7 +5,7 @@ import re # Added import for regex
 
 # Ścieżka do pliku CSV (wraz z nazwą pliku)
 # Upewnij się, że ta ścieżka jest ustawiona, jeśli używasz import_pdn_from_csv!
-CSV_PATH = 'evaluation_001.csv'  # Example: 'C:/warcaby/dane.csv'
+CSV_PATH = 'self_play_training_data.csv'  # Example: 'C:/warcaby/dane.csv'
 
 # Ścieżka do bazy danych (wraz z nazwą pliku .db)
 DB_PATH = 'draughts_positions.db'  # Example: 'C:/warcaby/baza.db'
@@ -126,8 +126,7 @@ def show_database(limit=20):
     finally:
         conn.close()
 
-
-def get_positions(chunk_size=200):
+def get_positions(chunk_size=200, start_offset=0, loop=False):
     conn = None
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -137,33 +136,35 @@ def get_positions(chunk_size=200):
         c.execute("SELECT COUNT(*) FROM positions")
         total = c.fetchone()[0]
 
-        # Użyj zmiennej statycznej do przechowywania offsetu między wywołaniami
-        if not hasattr(get_positions, 'offset'):
-            get_positions.offset = 0
+        offset = start_offset
 
         while True:
-            c.execute(f"SELECT pdn, best_move FROM positions LIMIT {chunk_size} OFFSET {get_positions.offset}")
+            c.execute("SELECT pdn, best_move FROM positions LIMIT ? OFFSET ?", (chunk_size, offset))
             rows = c.fetchall()
-            print(f"AKTUALNY OFFSET {get_positions.offset}")
+            print(f"AKTUALNY OFFSET {offset}")
             if not rows:
-                # Jeśli nie ma więcej rekordów, resetujemy offset
-                get_positions.offset = 0
-                continue
+                if loop:
+                    offset = 0
+                    continue
+                else:
+                    break
 
             for row in rows:
                 yield row
 
-            get_positions.offset += chunk_size
-
-            # Jeśli offset przekroczył całkowitą liczbę rekordów, resetujemy go
-            if get_positions.offset >= total:
-                get_positions.offset = 0
+            offset += chunk_size
+            if offset >= total:
+                if loop:
+                    offset = 0
+                else:
+                    break
 
     except Exception as e:
-        print(f"Błąd podczas pobierania pozycji z bazy danych w chunkach: {e}")
+        print(f"Błąd podczas pobierania pozycji z bazy danych: {e}")
     finally:
         if conn:
             conn.close()
+
 
 def restart_terminated():
     conn = sqlite3.connect(DB_PATH)

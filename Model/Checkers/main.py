@@ -38,8 +38,8 @@ def get_best_checkpoint_nested(root_dir="checkpoints/"):
 
 def main():
     # Make sure you have enough data in your DB for these chunk sizes
-    train_ds = CheckersStreamDataset(chunk_size=200)
-    val_ds = CheckersStreamDataset(chunk_size=200)
+    train_ds = CheckersStreamDataset(chunk_size=200,  start_offset=0)
+    val_ds = CheckersStreamDataset(chunk_size=200, start_offset=30000)
 
     # It's important that num_workers > 0 for IterableDataset and persistent_workers=True
     # If you encounter issues with multiprocessing (especially on Windows), try num_workers=0 or 1 first.
