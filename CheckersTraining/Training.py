@@ -35,9 +35,6 @@ def get_best_checkpoint_nested(root_dir="checkpoints/"):
                             best_loss = loss
                             best_ckpt_path = os.path.join(subdir_path, file)
 
-                            #ckpt = torch.load(best_ckpt_path, map_location="cpu")
-                            #print("Klucze w checkpoincie:", ckpt.keys())
-
     return best_ckpt_path
 
 
