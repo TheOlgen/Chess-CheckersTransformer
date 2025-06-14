@@ -1,29 +1,30 @@
-import chess
-#import python-chess as chess
+import csv
 import Evaluator as eval
+from Chess.Database.SQL_chess import init_db, add_position, show_database
 
 # Inicjalizacja
-board = chess.Board()
 evaluator = eval.Evaluator()
 file = open("bestMoveData.txt", 'a')
+#init_db()
 
-# Gra
-while True:
-    if board.is_game_over():
-        board = chess.Board()
-    print(board)
-    best_move, posEval = evaluator.evaluate(board.fen())
-    print("Ocena pozycji:", best_move, posEval)
-    file.write(board.fen() + " " + best_move + " " + str(posEval) + "\n")
+with open('chessData.csv', newline='', encoding='utf-8') as csvfile:
+    reader = csv.reader(csvfile)
+    next(reader, None)
+    count = 0
+    for row in reader:
+        count += 1
+        fen = row[0]
+        best_move = evaluator.evaluate(fen)
+        #file.write(fen + " ; " + best_move + "\n") #debug
+        add_position(fen, best_move)
+        #to zakomentujcie jeśli chcecie coś dodawać do bazy
+        #if count == 50:
+        break
 
-    #print(list(board.legal_moves))
-    if best_move is None:
-        break  # brak ruchów (koniec gry)
 
-    best_move = chess.Move.from_uci(best_move)
+file.close()
+show_database()
 
-    print(f"Agent wykonuje ruch: {best_move}")
-    board.push(best_move)
 
-print(board)
-print("Gra zakończona:", board.result())
+
+

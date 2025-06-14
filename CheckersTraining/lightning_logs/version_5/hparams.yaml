@@ -1,0 +1,11 @@
+converter: !!python/name:CheckersUtils.index_to_move ''
+d_model: 512
+dim_feedforward: 2048
+dropout: 0.1
+evaluator: !!python/name:CheckersUtils.checkersEvaluator ''
+lr: 0.0003
+max_len: 101
+num_embeddings: 5
+num_heads: 8
+num_layers: 6
+num_moves: 2500
