@@ -10,7 +10,7 @@
 
 
 \title{Szachy bez przeszukiwania: \\Uczenie maszynowe z użyciem transformera w kontekście szachów i warcab}
-\author{Kacper Mikołajuk, Natalia Dembkowska, \\Natalia Sekula, Olga Rodziewicz, Patryk Lewandowski \\ Politechnika Gdańska \\01.06.2025}
+\author{Kacper Mikołajuk 198254, \\Natalia Dembkowska 198152, \\Natalia Sekula 197913, \\Olga Rodziewicz 198421, \\Patryk Lewandowski 197891 \\ Politechnika Gdańska }
 \date{}
 
 \begin{document}
@@ -74,15 +74,19 @@ Dane użyte w projekcie zostały przygotowane w następujący sposób:
 \subsection{Model}
 Implementacja modelu oraz procesu treningu została zrealizowana w języku Python, z wykorzystaniem bibliotek \texttt{torch} (PyTorch) i \texttt{pytorch-lightning}. Kluczowe etapy to: tokenizacja, konstrukcja architektury transformera oraz algorytm treningowy.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{graf1.png}
+  \caption{Schemat procesu tokenizacji danych wejściowych}
+\end{figure}
+
 \paragraph{Tokenizacja danych}
+
 \\Aby model transformera mógł operować na danych, każdą pozycję oraz odpowiadający jej ruch należało zamienić na sekwencję liczb (tokenów). W pierwszym kroku dzieliliśmy tekstową notację FEN na fragmenty odpowiadające poszczególnym rzędom szachownicy (lub układowi warcabnicy), a następnie każdy znak (litery figur, cyfry określające puste pola, symbole rozdzielające) traktowaliśmy jako osobny token. Dodatkowo w FEN-ie zawarte są informacje o aktywnym kolorze, prawach do roszady, kwadracie \emph{en passant} oraz licznikach półruchów i ruchów; wszystkie te elementy kodowaliśmy jako odrębne tokeny liczbowo odpowiadające ich możliwym wartościom. W efekcie, dla każdej pozycji uzyskiwaliśmy sekwencję o długości w praktyce oscylującej wokół 70–80 tokenów, co wliczało zarówno układ bierek, jak i pozostałe parametry FEN-a.
 
 Ruch w notacji UCI (np. \texttt{e2e4}) lub analogiczny w warcabach (np. \texttt{b6c7e5}) również dzieliliśmy na podtokeny: litera kolumny i cyfra rzędu rozdzielane były na dwie części, a każdy z tych podtokenów miał swój indeks w słowniku. W ten sposób ruch łączono w sekwencję długości zwykle 2 lub 4 tokenów. 
 
 Sekwencja wejściowa do transformera powstawała z połączenia tokenów opisujących bieżący stan gry (FEN). W naszym podejściu ograniczyliśmy się do stanu bieżącego (pełnego opisu FEN-a), traktując zadanie jako predykcję kolejnego ruchu wyłącznie na podstawie tego, co jest widoczne na planszy. Wyjście modelu ma postać jednego tokenu (lub sekwencji tokenów) odpowiadającego najlepszym ruchom zwróconym przez silnik; w końcowym etapie dekodowaliśmy go z powrotem do postaci tekstowej (notacja UCI lub odpowiednik dla warcab).
-
-
-
 
 \paragraph{Architektura transformera}
 \\Trasformer, który wykorzystaliśmy w projekcie, to wariant „decoder‐only” inspirowany modelami GPT. Jego zadaniem było uczenie się mapowania sekwencji wejściowej (tokeny opisujące bieżący stan gry) na sekwencję wyjściową (token(y) ruchu). Całość została zaimplementowana jako klasa dziedziczącą po \\\texttt{pytorch\_lightning.LightningModule}, co umożliwiło wygodne zarządzanie pętlą treningową, logowaniem oraz checkpointami.
@@ -90,6 +94,12 @@ Sekwencja wejściowa do transformera powstawała z połączenia tokenów opisuj�
 Pierwszym etapem w module transformera jest warstwa embeddingu, która mapuje każdy token (liczony z zakresu od 0 do rozmiaru słownika minus jeden) na wektor o wymiarze \(d_{\text{model}} = 512\). Następnie do każdego embeddingu dodawane jest pozycjonalne kodowanie (ang. \emph{positional encoding}), dzięki któremu model wie, w której kolejności pojawiły się tokeny. Pozycjonalne kodowanie zostało zaimplementowane zgodnie z pomysłem z oryginalnej publikacji Vaswaniego i innych\;– obliczamy wektory sinusoida i cosinusoida dla kolejnych pozycji od 0 do maksymalnej długości sekwencji (w naszym przypadku ustalonej na 72 tokeny) i dodajemy je do embeddingu.
 
 Rdzeń modelu składa się z sześciu kolejnych bloków transformera. Każdy blok zawiera maskowaną warstwę self‐attention z ośmioma głowami oraz wielowarstwowy moduł feed‐forward (w dwóch krokach liniowej transformacji z funkcją aktywacji ReLU pomiędzy). Po warstwie uwagi oraz po module feed‐forward stosujemy normalizację warstwy (Layer Normalization) oraz dropout o prawdopodobieństwie odrzutu równym 0,1, aby zapobiegać nadmiernemu dopasowaniu. Maskowanie w warstwie self‐attention jest konieczne po to, aby model podczas nauki predykcji następnego tokenu nie miał dostępu do elementów sekwencji wykraczających poza bieżącą pozycję (ang. \emph{causal mask}). Dzięki temu sieć uczy się autoregresywnie generować ruch bazując tylko na tym, co jest już „widoczne”.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{graf2.png}
+  \caption{Schemat procesu tokenizacji danych wejściowych}
+\end{figure}
 
 Po przejściu przez wszystkie bloki transformera otrzymujemy tensor o kształcie\\ \((\text{batch\_size}, \text{seq\_len}, d_{\text{model}})\). Aby wykonać predykcję ruchu, najpierw uśredniamy ten tensor po wymiarze sekwencji (tzw. pooling mean). W rezultacie otrzymujemy wektor o wymiarze \((\text{batch\_size}, d_{\text{model}})\), który następnie podajemy na w pełni połączoną warstwę liniową zwracającą logity dla każdego możliwego ruchu w słowniku (łącznie kilkanaście tysięcy tokenów ruchu). Do obliczenia funkcji straty wykorzystujemy entropię krzyżową (\(\text{CrossEntropyLoss}\)), porównującą przewidywany rozkład prawdopodobieństwa z rzeczywistym ruchem zapisanym w danych.
 
@@ -144,10 +154,9 @@ Projekt ten może stanowić solidną bazę do dalszych, bardziej udanych prób s
        \\ \url{https://stockfishchess.org/}
     \item Dane szachowe: 
        \\ \url{https://www.kaggle.com/datasets/arevel/chess-games/data}
-    \item Dane warcabowe: 
-       \\ \url{TODO}
+    \item Silnik warcabowy: 
+       \\ \url{https://lidraughts.org/}
 
 \end{itemize}
 
-TODO
 \end{document}
