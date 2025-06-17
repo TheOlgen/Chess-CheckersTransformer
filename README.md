@@ -1,58 +1,62 @@
-# Szachy bez przeszukiwania – transformer do gry w szachy i warcaby
+# Chess Without Search – A Transformer-Based Approach to Chess and Draughts
 
-Projekt realizowany na Politechnice Gdańskiej miał na celu zbadanie możliwości zastosowania architektury **transformera** do uczenia gry w szachy i warcaby bez użycia klasycznego przeszukiwania drzew decyzyjnych.
+This project explores the application of a **decoder-only Transformer architecture** (similar to GPT models) to predict moves in **chess** and **draughts (checkers)** without relying on search-based methods like those used in traditional engines (e.g., Stockfish).
 
-## ✨ Opis projektu
+> 📄 For more in-depth technical details (in Polish), see: [`docs/sprawozdanie.pdf`](docs/sprawozdanie.pdf)
 
-W przeciwieństwie do tradycyjnych silników (np. Stockfish), które opierają się na głębokim przeszukiwaniu drzewa ruchów, nasz model uczy się generować kolejne ruchy wyłącznie na podstawie bieżącej pozycji na planszy, przy użyciu architektury **transformera typu decoder-only (GPT-like)**.
+## 🚀 Project Overview
 
-Projekt obejmuje:
-- Tokenizację plansz szachowych (FEN) i warcabowych.
-- Przetwarzanie i ocenę pozycji przy pomocy silników Stockfish i Scan Engine.
-- Trening modelu transformera w PyTorch Lightning.
-- Ewaluację dokładności przewidywanych ruchów i ich legalności.
+Instead of building a search tree to find the best move, we trained a Transformer model to predict the next move **based solely on the current board position**.
 
-## 🧠 Architektura modelu
+The model receives a FEN-like representation of a game state and is trained to output the move that a traditional engine (Stockfish or Scan Engine) would suggest.
 
-- Architektura typu `decoder-only`, inspirowana GPT.
-- Warstwa embeddingu + kodowanie pozycyjne.
-- 6 bloków transformera (8 głowic, FFN z ReLU, LayerNorm, Dropout).
-- CrossEntropyLoss do porównania przewidywań z ruchami silnika.
+## 🛠 Implementation Highlights
 
-## 🛠️ Implementacja
+- **Language:** Python 3.10  
+- **Libraries:** PyTorch, PyTorch Lightning, python-chess, pydraughts  
+- **Data Source:**  
+  - Chess: Lichess PGN → converted to FEN  
+  - Draughts: LiDraughts custom format  
 
-Główne komponenty:
-- Python 3.10
-- PyTorch, PyTorch Lightning
-- `python-chess`, `pydraughts`, `sqlite3`
-- Trening: batch_size = 64, d_model = 512, AdamW
+- **Evaluation Engines:**  
+  - Chess: Stockfish  
+  - Draughts: Scan Engine (via `pydraughts`)
 
-Zbiór danych:
-- Szachy: dane z Lichess w formacie PGN → FEN
-- Warcaby: dane z LiDraughts
-- Pozycje oceniane silnikami i zapisane w SQLite
+- **Storage:** SQLite database for storing board positions and moves  
+- **Training:**  
+  - `batch_size = 64`, `d_model = 512`  
+  - Optimizer: AdamW  
+  - 20 epochs, learning rate decay, early stopping  
 
-## 📊 Ewaluacja
+## 🤖 Model Architecture
 
-Model oceniano na podstawie:
-- **Accuracy** – trafność przewidywanego ruchu.
-- **Cross-entropy loss** – funkcja straty.
-- **Illegal Moves** – liczba nielegalnych przewidywań.
+- Decoder-only Transformer (like GPT)
+- 6 Transformer blocks with:
+  - Multi-head masked self-attention (8 heads)
+  - Feed-forward network with ReLU
+  - Layer Normalization and Dropout (0.1)
+- Output logits over a large tokenized move vocabulary
 
-Wyniki były niezadowalające — model trafiał w ruchy silnika sporadycznie i często przewidywał nielegalne posunięcia. Główne problemy to:
-- Za mała ilość danych i ograniczenia sprzętowe.
-- Zbyt wysoka liczba parametrów (d_model=512).
-- Zbyt szeroka przestrzeń wyjściowa (wszystkie możliwe ruchy).
+## 📊 Evaluation Metrics
+
+- **Accuracy** – top-1 match with engine suggestion  
+- **Cross-entropy loss**  
+- **Illegal Moves Count** – whether predicted move is legal  
+
+The model occasionally predicted correct moves but frequently generated illegal ones. Key limitations:
+- Too few training samples vs. model complexity  
+- Overly large output space (all legal and illegal moves)  
+- Hardware constraints and limited training time  
 
 
-## 🔮 Możliwe usprawnienia
+## 🔮 Future Work
 
-- Redukcja przestrzeni wyjściowej (np. maskowanie legalnych ruchów).
-- Uproszczona reprezentacja planszy jako obraz.
-- Zastosowanie mniejszych modeli lub technik transfer learningu.
-- Lepsze dostrojenie hiperparametrów i dłuższy trening.
+- Reduce output space using legal move masks  
+- Smaller/lighter models or pretrained embeddings  
+- Visualization of attention on the board  
+- Improve input/output representations  
 
-## 👥 Autorzy
+## 👥 Authors
 
 - Kacper Mikołajuk  
 - Natalia Dembkowska  
@@ -60,14 +64,14 @@ Wyniki były niezadowalające — model trafiał w ruchy silnika sporadycznie i 
 - Olga Rodziewicz  
 - Patryk Lewandowski  
 
-## 📚 Źródła
+## 🔗 Resources
 
-- [Grandmaster-Level Chess Without Search](https://arxiv.org/html/2402.04494v1)
-- [Stockfish Chess Engine](https://stockfishchess.org/)
-- [Lichess Chess Data (Kaggle)](https://www.kaggle.com/datasets/arevel/chess-games/data)
-- [LiDraughts](https://lidraughts.org/)
-- [Chess Transformers repo](https://github.com/sgrvinod/chess-transformers)
+- [Grandmaster-Level Chess Without Search (arXiv)](https://arxiv.org/html/2402.04494v1)  
+- [Stockfish Engine](https://stockfishchess.org/)  
+- [Lichess Dataset on Kaggle](https://www.kaggle.com/datasets/arevel/chess-games/data)  
+- [LiDraughts](https://lidraughts.org/)  
+- [Chess Transformers GitHub](https://github.com/sgrvinod/chess-transformers)
 
 ---
 
-> Projekt zrealizowany w ramach zajęć na Politechnice Gdańskiej.
+> Developed at Gdańsk University of Technology as part of a course project.
