@@ -25,7 +25,6 @@ The model receives a FEN-like representation of a game state and is trained to o
 - **Storage:** SQLite database for storing board positions and moves  
 - **Training:**  
   - `batch_size = 64`, `d_model = 512`  
-  - Optimizer: AdamW  
   - 20 epochs, learning rate decay, early stopping  
 
 ## 🤖 Model Architecture
