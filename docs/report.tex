@@ -10,7 +10,7 @@
 
 
 \title{Szachy bez przeszukiwania: \\Uczenie maszynowe z użyciem transformera w kontekście szachów i warcab}
-\author{Patryk Lewandowski, Kacper Mikołajuk, \\Natalia Sekuła, Olga Rodziewicz, Natalia Dembkowska \\ Politechnika Gdańska \\01.06.2025}
+\author{Kacper Mikołajuk, Natalia Dembkowska, \\Natalia Sekula, Olga Rodziewicz, Patryk Lewandowski \\ Politechnika Gdańska \\01.06.2025}
 \date{}
 
 \begin{document}
@@ -59,7 +59,9 @@ W kontekście naszego projektu, w którym celem jest wytrenowanie transformera g
 Dane użyte w projekcie zostały przygotowane w następujący sposób:
 \begin{enumerate}
     \item \textbf{Pozyskanie surowych danych:}
-    \\W przypadku szachów, dane został pobrane z serwisu LiChess w formacie PGN, które przekształcamy na notację FEN. W przypadku warcab, dane pochodzą z LiDraughts w formacie X.
+    \\W przypadku szachów, dane został pobrane z serwisu LiChess w formacie PGN, które przekształcamy na notację FEN. 
+    
+    W przypadku warcab, dane pochodzą z LiDraughts w formacie X. Dodatkowo dla warcab została zaimplementowana opcja nauki w trakcie gry Model vs Model.
     \item \textbf{Ocena pozycji:}
     \begin{itemize}
         \item \emph{Szachy:} Dla każdej pozycji (zapisanej w formacie FEN) uruchamiony zostaje silnik Stockfish za pomocą biblioteki \texttt{python-stockfish}, który dla danej planszy zwraca najlepszy ruch. 
@@ -101,23 +103,51 @@ Dzięki internemu logowaniu Lightninga mogliśmy w czasie rzeczywistym śledzić
 
 \subsection{Ewaluacja}
 
-Po zakończeniu treningu model zweryfikowaliśmy na wcześniej wydzielonym zbiorze testowym, stanowiącym około 10\% wszystkich ocenionych pozycji i nigdy nieużytym w trakcie uczenia. Proces ewaluacji przebiegał dwuetapowo. Najpierw wczytywaliśmy najlepszy checkpoint (według metryki Top-1 Accuracy na walidacji) i uruchamialiśmy metodę \texttt{trainer.validate()}, aby upewnić się, że model nie przeuczył się i dalej poprawnie generalizuje. Następnie wywoływaliśmy \texttt{trainer.test()}, przekazując testowy \texttt{DataLoader}. Dla każdej próbki obliczaliśmy prawdopodobieństwo wszystkich możliwych ruchów i porównywaliśmy wybrany przez model ruch z rzeczywistym ruchem silnika (Stockfish lub Scan Engine). Ponadto sprawdzaliśmy, czy sugerowany ruch jest legalny – w przypadku niezgodności liczyliśmy je jako \emph{illegal moves} i logowaliśmy tę wartość.
+Po zakończeniu treningu model zweryfikowaliśmy na wcześniej wydzielonym zbiorze testowym, stanowiącym około 10\% wszystkich ocenionych pozycji i nigdy nieużytym w trakcie uczenia. Proces ewaluacji przebiegał dwuetapowo. Najpierw wczytywaliśmy najlepszy checkpoint (według metryki Top-1 Accuracy na walidacji). Dla każdej próbki obliczaliśmy prawdopodobieństwo wszystkich możliwych ruchów i porównywaliśmy wybrany przez model ruch z rzeczywistym ruchem silnika (Stockfish lub Scan Engine). Ponadto sprawdzaliśmy, czy sugerowany ruch jest legalny – w przypadku niezgodności liczyliśmy je jako \emph{illegal moves} i logowaliśmy tę wartość.
 
 Do oceny jakości modelu posłużyły następujące metryki:
 \begin{itemize}
-    \item \emph{Move Accuracy} – odsetek przypadków, w których przewidziany ruch dokładnie odpowiadał rekomendacji silnika (Top-1 Accuracy).
-    \item \emph{Top-5 Accuracy} – odsetek, w którym poprawny ruch znajdował się wśród pięciu najbardziej prawdopodobnych ruchów wybranych przez model.
+    \item \emph{Accuracy} – wartość miary oceny jakości klasyfikatora wieloklasowego.
+    \item \emph{Errors} – odsetek przypadków, w których przewidziany ruch nie odpowiadał wartości sugerowanej przez silnik
     \item \emph{Cross-entropy loss} – średnia wartość funkcji straty na zbiorze testowym.
     \item \emph{Illegal Moves Count} – liczba nielegalnych ruchów (predicted\_move nie należący do zbioru legalnych), co sygnalizuje, na ile model nauczył się zasad gry, a nie tylko wzorców z danych.
 \end{itemize}
 
-Wyniki ewaluacji zapisywaliśmy w pliku X, dzięki któremu mogliśmy później wygenerować wykresy obrazujące spadek straty oraz wzrost dokładności w kolejnych epokach (przy użyciu biblioteki \texttt{matplotlib}), a także porównać osobno dokładność modelu dla szachów i dla warcab. Dodatkowo wybraliśmy kilka przykładowych pozycji z testu i przedstawiliśmy je w formie tabelarycznej z analizą przypadków, w których X.
+Wyniki ewaluacji zapisywaliśmy w pliku metrics.csv, dzięki któremu mogliśmy później wygenerować wykresy obrazujące spadek straty oraz wzrost dokładności w kolejnych epokach (przy użyciu biblioteki \texttt{matplotlib}), a także porównać osobno dokładność modelu dla szachów i dla warcab. 
+
+\section{Rezultaty}\label{sec:results}
+
+Uczenie modelu okazało się bardzo czasochłonne. Przetworzenie 1000 planszy szachów, w dwóch epokach, zajmowało kilka minut. Dlatego, skonfigurowaliśmy nasze procesory graficzne tak, aby móc wykonywać na nich program Pythona. Po tym usprawnieniu, byliśmy w stanie, w krótszym czasie przetworzyć tyle samo plansz ale w 20 epokach. Mimo optymalizacji uczenie było powolne, accuracy stopniowo się poprawiało, jednak niewystarczająco szybko.
+
+Otrzymane rezultaty okazały się dalekie od oczekiwań. Chociaż model nauczył się rozpoznawać podstawowe zależności na planszy i sporadycznie trafiał z dokładnym ruchem silnika, to ogólny poziom gry pozostawał niski. Szczególnie kłopotliwa okazała się wysoka stopa nielegalnych ruchów. 
 
 
-\section{Rezultaty}
-TODO
-\section{Wnioski}
-TODO
+\section{Wnioski}\label{sec\:conclusions}
+Główne przyczyny niezadowalających wyników można podsumować następująco:
+\begin{enumerate}
+    \item \textbf{Brak czasu oraz sprzętu potrzebnego do wytrenowania modelu} Problem szachów oraz warcab bez przeszukiwania, jest bardzo złożony. Zdawaliśmy sobie z tego sprawę już na początku pracy nad projektem, jednak zabrakło nam czasu potrzebnego do treningu. Dodatkowo, nasze sprzęty nie są wystarczająco zaawansowane by wydajnie uczyć złożony model.
+    \item \textbf{Parametry nie są odpowiednio dopasowane do problemu. Występuje zbyt wysoki wymiar \$d\_{\text{model}}\$.} Wybór \$d=512\$ przy stosunkowo niewielkim zbiorze spowodował, że model miał więcej parametrów niż dane były w stanie wiarygodnie wytrenować.
+    \item \textbf{Tablica logitów obejmująca \emph{wszystkie} możliwe ruchy.} Przestrzeń wyjściowa licząca kilkanaście tysięcy tokenów powodowała rozrzedzenie prawdopodobieństwa i utrudniała uczenie. Lepszym rozwiązaniem byłoby wyjście modelu prezentujące planszę z wykonanym najlepszym ruchem.
+\end{enumerate}
+\paragraph{Nauka wyciągnieta z projektu} 
+Pomimo napotkanych ograniczeń, realizacja projektu umożliwiła nam zdobycie istotnych kompetencji w zakresie praktycznego wykorzystania architektury transformerów. W szczególności, uzyskaliśmy doświadczenie w implementacji oraz trenowaniu modeli tego typu. Analiza rezultatów pozwoliła na lepsze zrozumienie znaczenia doboru odpowiednich hiperparametrów, sposobu reprezentacji danych wejściowych i wyjściowych, a także wpływu ograniczeń sprzętowych na efektywność procesu uczenia.
+
+Projekt ten może stanowić solidną bazę do dalszych, bardziej udanych prób stworzenia modelu zdolnego do gry w szachy, warcaby lub inne gry planszowe. Kod źródłowy, pipeline przetwarzania danych, oraz przyjęte rozwiązania architektoniczne mogą być punktem wyjścia do bardziej zoptymalizowanych i skutecznych podejść — zarówno przez nas, jak i przez innych badaczy czy studentów zajmujących się podobnymi zagadnieniami.
+
 \section{Bibliografia}
+\begin{itemize}
+    \item Główne źródło: Artykuł Grandmaster-Level Chess Without Search
+       \\ \url{https://arxiv.org/html/2402.04494v1}
+    \item Inny szachowy Transformer:
+       \\ \url{https://github.com/sgrvinod/chess-transformers}
+    \item Szachowy evaluator:
+       \\ \url{https://stockfishchess.org/}
+    \item Dane szachowe: 
+       \\ \url{https://www.kaggle.com/datasets/arevel/chess-games/data}
+    \item Dane warcabowe: 
+       \\ \url{TODO}
+
+\end{itemize}
+
 TODO
 \end{document}
