@@ -30,11 +30,12 @@ The model receives a FEN-like representation of a game state and is trained to o
 ## 🤖 Model Architecture
 
 - Decoder-only Transformer (like GPT)
+- Tokenization visualization:
+  ![image](./docs/graf1.png)
 - 6 Transformer blocks with:
   - Multi-head masked self-attention (8 heads)
   - Feed-forward network with ReLU
   - Layer Normalization and Dropout (0.1)
-  ![image](./docs/graf2.png)
 - Output logits over a large tokenized move vocabulary
 
 ## 📊 Evaluation Metrics
