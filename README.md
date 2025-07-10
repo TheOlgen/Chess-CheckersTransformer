@@ -34,6 +34,7 @@ The model receives a FEN-like representation of a game state and is trained to o
   - Multi-head masked self-attention (8 heads)
   - Feed-forward network with ReLU
   - Layer Normalization and Dropout (0.1)
+  ![image info](./docs/graf2.png)
 - Output logits over a large tokenized move vocabulary
 
 ## 📊 Evaluation Metrics
